@@ -3,7 +3,7 @@ from antlr4 import *
 from DecafLexer import DecafLexer
 from DecafParser import DecafParser
 
-
+#Example extracted from https://github.com/antlr/antlr4/blob/master/doc/python-target.md
 def main(argv):
     input = FileStream(argv[1])
     lexer = DecafLexer(input)
@@ -13,4 +13,4 @@ def main(argv):
     print(tree.toStringTree(recog=parser))
 
 if __name__ == '__main__':
-    main(sys.argv)
+    tree = main(sys.argv)
