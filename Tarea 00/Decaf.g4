@@ -14,6 +14,7 @@ CHAR:   '\'' LETTER '\'';
 
 SPACES : [ \t\r\n\f]+  ->channel(HIDDEN);
 
+
 /* Rules */
 
 program:        'class' ID '{' (declaration)* '}' EOF;
@@ -25,7 +26,8 @@ declaration:    structDeclaration
 varDeclaration: varType ID ';' 
         | varType ID '[' NUM ']' ';';
 
-structDeclaration:      'struct' ID '{' (varDeclaration)* '}';
+structDeclaration:      'struct' ID '{' (varDeclaration)* '}' ; 
+/* Para que los ejemplos que se dio no de error se debe agregar ';' al final */
 
 varType:        'int' 
         | 'char' 
@@ -34,7 +36,7 @@ varType:        'int'
         | structDeclaration 
         | 'void';
 
-methodDeclaration:      methodType ID '(' (parameter (',' parameter)*)?  ')' block;
+methodDeclaration:      methodType ID '(' (parameter (',' parameter)*)*  ')' block;
 
 methodType:     'int' 
         | 'char' 
@@ -42,7 +44,8 @@ methodType:     'int'
         | 'void';
 
 parameter: parameterType ID 
-        | parameterType ID '[' ']';
+        | parameterType ID '[' ']'; 
+/* Para que los ejemplos que se dio no de error se debe agregar | 'void' al final */
 
 parameterType:  'int' 
         | 'char' 
@@ -50,12 +53,12 @@ parameterType:  'int'
 
 block:  '{' (varDeclaration)* (statement)* '}';
 
-statement:      'if' '(' expression ')' ('else' )?
+statement:      'if' '(' expression ')' block ('else' block)?
         | 'while' '(' expression ')' block
         | 'return' (expression)? ';'
         | methodCall ';'
         | block
-        | location '=' expression ';'
+        | location '=' expression 
         | (expression)? ';'; 
 
 location:       (ID | ID '[' expression ']' ) ('.' location)?;
@@ -68,7 +71,7 @@ expression:     location
         | '!' expression
         | '(' expression ')';
         
-methodCall:     ID '(' (arg (',' arg)*)? ')';
+methodCall:     ID '(' (arg (',' arg)*)* ')';
 
 arg:    expression;
 
