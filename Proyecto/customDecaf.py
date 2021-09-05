@@ -278,7 +278,6 @@ class STFiller(DecafListener):
     #------methodcall------
     def exitMethodCall(self, ctx: DecafParser.MethodCallContext):
         methodName = ctx.getChild(0).getText()
-        args = ctx.getChild(2).getText()
 
         methodObj = self.searchMethod(methodName)
 
