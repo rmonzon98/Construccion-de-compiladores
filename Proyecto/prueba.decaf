@@ -1,8 +1,0 @@
-class Program {
-    void main(void){
-        int i;
-	i = 2/0;
-    }
-}
-
-

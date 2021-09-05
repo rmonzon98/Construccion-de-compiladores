@@ -1,13 +1,13 @@
 class scopeItem():
-    def __init__(self, parentKey, symbolTable, returnType):
+    def __init__(self, parentKey, varItems, returnType):
         self.parentKey = parentKey
         self.returnType = returnType
-        self.symbolTable = symbolTable
+        self.varItems = varItems
 
 class structItem():
-    def __init__(self, structId, symbolTable):
+    def __init__(self, structId, varItems):
         self.structId = structId
-        self.symbolTable = symbolTable
+        self.varItems = varItems
 
 class varItem():
     def __init__(self, varId, varType, varContext, isArray):
