@@ -139,7 +139,7 @@ class STFiller(DecafListener):
                 structToUse = self.searchSST(structVarType.varType) #Search symbol table
                 self.structStack.append(structToUse)
             else:
-                structVarType = self.structStack[-1].varItems[varId]
+                structVarType = self.structStack[-1].symbolTable[varId]
                 structToUse = self.searchSST(structVarType.varType) #Search symbol table
                 self.structStack.append(structToUse)
     
@@ -150,7 +150,7 @@ class STFiller(DecafListener):
             if self.structStack != []:
                 currentTable = self.structStack.pop()
                 if (currentTable != None):
-                    varBeingEvaluated = currentTable.varItems[ctx.getChild(0).getText()]
+                    varBeingEvaluated = currentTable.symbolTable[ctx.getChild(0).getText()]
                     if (varBeingEvaluated != None):
                         self.nodeTypes[ctx] = self.nodeTypes[ctx.location()]
                     else:
@@ -172,7 +172,7 @@ class STFiller(DecafListener):
             if self.structStack != []:
                 currentTable = self.structStack.pop()
                 if (currentTable != None):
-                    varBeingEvaluated = currentTable.varItems[ctx.getChild(0).getText()]
+                    varBeingEvaluated = currentTable.symbolTable[ctx.getChild(0).getText()]
                     if (varBeingEvaluated != None):                      
                         self.nodeTypes[ctx] = varBeingEvaluated.varType                                 
                 if (currentTable == None or varBeingEvaluated == None):
@@ -454,11 +454,11 @@ class STFiller(DecafListener):
     #----agregar nueva variable a symboltable----
     def addVarST(self, varType, varId, varContext, isArray):
         #primero conseguimos el symboltable del scope en el que estamos
-        temp = self.scopeDictionary.get(self.currentScope).varItems
+        temp = self.scopeDictionary.get(self.currentScope).symbolTable
         if varId not in temp:
             #Si no encuentra la variable dentro del symbolTable
             temp[varId] = varItem(varId, varType, varContext, isArray)
-            self.scopeDictionary.get(self.currentScope).varItems = temp
+            self.scopeDictionary.get(self.currentScope).symbolTable = temp
             return True
         else:
             return False
@@ -467,7 +467,7 @@ class STFiller(DecafListener):
     def searchVar(self, varId, scopeName):
         varEv = None
         #buscamos el symboltable del scope solicitado
-        tempST = self.scopeDictionary.get(scopeName).varItems
+        tempST = self.scopeDictionary.get(scopeName).symbolTable
         
         if varId in tempST:
             #Si lo encuentra devuelve valor
@@ -495,7 +495,7 @@ class STFiller(DecafListener):
     #----comparación de parametros----
     #esta función verifica que cuando se llama una función tenga la cantidad y tipo de parametros correctos
     def compareParameters(self, methodObj, methodCallTypes):
-        symbolTable = methodObj.varItems
+        symbolTable = methodObj.symbolTable
         methodDeclarationTypes = []
         for varId, varItem in symbolTable.items():
             if varItem.varContext == "param":
@@ -510,14 +510,14 @@ class STFiller(DecafListener):
     def addStructST(self, structId):
         structId = "struct"+structId
         if structId not in self.structDictionary:
-            self.structDictionary[structId] = structItem(structId=structId, varItems={})
+            self.structDictionary[structId] = structItem(structId=structId, symbolTable={})
 
     #funcion que verifica si una variable no esta ya dentro de un contexto
     #----agregar variable a struct----
     def addVarS(self, structId, varType, varId, varContext, isArray):
         alreadyDeclared = False
         structId = "struct" + structId
-        temp = self.structDictionary.get(structId).varItems
+        temp = self.structDictionary.get(structId).symbolTable
 
         if varId not in temp:
             temp[varId] = varItem(varId, varType, varContext, isArray)
@@ -525,12 +525,12 @@ class STFiller(DecafListener):
         else:
             alreadyDeclared = False
 
-        self.structDictionary.get(structId).varItems = temp
+        self.structDictionary.get(structId).symbolTable = temp
         return alreadyDeclared
 
-    #----buscar Struct----
+    #----agregar variable a struct----
     def searchSST(self, structId):
-        temp = None
+        symbolTable = None
         if structId in self.structDictionary:
-            temp = self.structDictionary[structId]
-        return temp
+            symbolTable = self.structDictionary[structId]
+        return symbolTable
