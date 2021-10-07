@@ -17,7 +17,6 @@ def abrir():
         text = input_file.read()
         txt_edit.insert(tk.END, text)
     label_errors.config(text='')
-    label_symbol.config(text='')
 
 def guardar():
     filepath = asksaveasfilename(
@@ -30,29 +29,19 @@ def guardar():
         text = txt_edit.get(1.0, tk.END)
         output_file.write(text)
     label_errors.config(text='')
-    label_symbol.config(text='')
     
 
 def ejecutar():
-    filepath = askopenfilename(
-        filetypes=[("Decaf", "*.decaf")]
-    )
-    if not filepath:
-        return
-    txt_edit.delete(1.0, tk.END)
-    with open(filepath, "r") as input_file:
-        text = input_file.read()
-        txt_edit.insert(tk.END, text)
-
-    errors, info = executeWalker(filepath)
-
-    label_symbol.config(text=info)
-
-    n = len(errors)
+    filepath = 'executiontemp.decaf'
+    with open(filepath, "w") as output_file:
+        text = txt_edit.get(1.0, tk.END)
+        output_file.write(text)
+    errors = executeWalker(filepath)
+    lines = len(errors)
     errorsMsg = ''
-    for i in range(n):
+    for i in range(lines):
         errorsMsg = errorsMsg + errors[i]+'\n'
-    if (n == 0): 
+    if (lines == 0): 
         errorsMsg = "No hay errores"
     label_errors.config(text=errorsMsg)
 
@@ -68,12 +57,10 @@ btn_open = tk.Button(fr_left_panel, text="Abrir", command=abrir)
 btn_save = tk.Button(fr_left_panel, text="guardar", command=guardar)
 btn_run = tk.Button(fr_left_panel, text="Ejecutar", command=ejecutar)
 label_errors = tk.Label(fr_left_panel, text="")
-label_symbol = tk.Label(fr_left_panel, text="")
 btn_open.grid(row=0, column=0, sticky="EW", padx=5)
 btn_save.grid(row=1, column=0, sticky="EW", padx=5)
 btn_run.grid(row=2, column=0, sticky="EW", padx=5)
 label_errors.grid(row=0, column=2, sticky="E", padx=5, pady=5)
-label_symbol.grid(row=0, column=1, sticky="E", padx=5, pady=5)
 fr_left_panel.grid(row=0, column=0, sticky="NS")
 txt_edit.grid(row=0, column=1, sticky="NSEW")
 userI.mainloop()

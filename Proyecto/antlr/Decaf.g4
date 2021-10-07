@@ -38,13 +38,13 @@ parameterType:      'int' | 'char' | 'boolean';
 block: '{' (varDeclaration)* (statement)* '}';
 
 statement: 
-        'if' '(' expression ')' block ( 'else' block )? #stat_if
-        | 'while' '('expression')' block #stat_else
-        | 'return' expressionOom ';' #stat_return
-        | methodCall ';' #stat_mcall
-        | block #stat_block
-        | location '=' expression #stat_assignment
-        | (expression)? ';' #stat_line
+        'if' '(' expression ')' block ( 'else' block )? #st_if
+        | 'while' '('expression')' block #st_while
+        | 'return' expressionOom ';' #st_return
+        | methodCall ';' #st_mtdc
+        | block #st_block
+        | location '=' expression #st_assig
+        | (expression)? ';' #st_line
         ;
 
 
@@ -53,17 +53,17 @@ expressionOom:  expression |;
 location:       (ID|ID '[' expression ']') ('.' location)?;
 
 expression: 
-        methodCall #expr_mcall
-        | location #expr_loc
-        | literal #expr_literal
-        | '-' expression #expr_minus // Unary Minus Operation
-        | '!' expression #expr_not // Unary NOT Operation
-        | '('expression')' #expr_parenthesis
-        | expression arith_op_fifth expression #expr_arith5 // * / %
-        | expression arith_op_fourth expression #expr_arith4 // + -
-        | expression arith_op_third expression #expr_arith3 // == != < <= > >=
-        | expression arith_op_second expression #expr_arith2 // &&
-        | expression arith_op_first expression #expr_arith1 // ||
+        methodCall #ex_mtdc
+        | location #ex_loc
+        | literal #ex_lite
+        | '-' expression #ex_minu
+        | '!' expression #ex_not
+        | '('expression')' #ex_par
+        | expression arith_op_fifth expression #ex_ar5
+        | expression arith_op_fourth expression #ex_ar4
+        | expression arith_op_third expression #ex_ar3
+        | expression arith_op_second expression #ex_ar2
+        | expression arith_op_first expression #ex_ar1
         ;
 
 methodCall: ID '(' (expression (',' expression)*)? ')';

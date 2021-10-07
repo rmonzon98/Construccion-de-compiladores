@@ -33,7 +33,7 @@ def executeWalker(file):
 
         info += "\nEl scope "+c+ " tiene como padre a "+ parent+ " y retorna " + returnType
         info +="\nSus variables son:"
-        for var, varItem in v.symbolTable.items():
+        for var, varItem in v.varItems.items():
             if (varItem.varType == None):
                 varType = 'None'
             else:
@@ -45,12 +45,13 @@ def executeWalker(file):
     for c, v in treeInfo.structDictionary.items():
         info += "\nEl struct con ID "+ c
         info +="\nTiene los siguientes atributos: "
-        for var, varItem in v.symbolTable.items():
+        for var, varItem in v.varItems.items():
             if (varItem.varType == None):
                 varType = 'None'
             else:
                 varType = varItem.varType
             info +="\n         Atributo con nombre " + var + " es tipo VarType " + varType + " (isArray: " + str(varItem.isArray) +")"
     
+    print(info)
 
-    return treeInfo.errorsFound, info
+    return treeInfo.errorsFound
