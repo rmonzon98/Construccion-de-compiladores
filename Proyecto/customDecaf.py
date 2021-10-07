@@ -435,18 +435,13 @@ class STFiller(DecafListener):
         
     #--------------------------Métodos del symbol table--------------------------
     #----agregar nuevo scope al diccionario----
-
-    def addNewScope(self, previousScope, methodType=None):
-        self.scopeDictionary[self.currentScope] = scopeItem(
+    def addScopeST(self, previousScope, methodType=None):
+        if self.currentScope not in self.scopeDictionary:
+            self.scopeDictionary[self.currentScope] = scopeItem(
                 previousScope, 
                 {}, 
                 methodType
                 ) #parent, vars, type
-
-
-    def addScopeST(self, previousScope, methodType=None):
-        if self.currentScope not in self.scopeDictionary:
-            self.addNewScope(previousScope, methodType)
             return True
         else:
             return False
