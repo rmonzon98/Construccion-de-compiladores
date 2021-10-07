@@ -48,11 +48,11 @@ def ejecutar():
 
     label_symbol.config(text=info)
 
-    lines = len(errors)
+    n = len(errors)
     errorsMsg = ''
-    for i in range(lines):
+    for i in range(n):
         errorsMsg = errorsMsg + errors[i]+'\n'
-    if (lines == 0): 
+    if (n == 0): 
         errorsMsg = "No hay errores"
     label_errors.config(text=errorsMsg)
 

@@ -11,7 +11,7 @@ class STFiller(DecafListener):
         self.errorsFound = []
         self.scopeDictionary = {}
         self.structDictionary = {}
-        self.validVarTypes = [
+        self.primitives = [
             'int', 
             'char', 
             'boolean', 
@@ -44,9 +44,7 @@ class STFiller(DecafListener):
     #--------------------------structDeclaration--------------------------
     def enterStructDeclaration(self, ctx: DecafParser.StructDeclarationContext):
         structId = ctx.getChild(1).getText()
-        structId = "struct"+structId
-        if structId not in self.structDictionary:
-            self.structDictionary[structId] = structItem(structId=structId, varItems={})
+        self.addStructST(structId)
     
     #--------------------------VarDeclaration--------------------------
     def enterVarDeclaration(self, ctx: DecafParser.VarDeclarationContext):
@@ -73,16 +71,7 @@ class STFiller(DecafListener):
         #se intenta agregar la variable dentro de su scope
         if firstChild == "struct":
             structId = parentCtx.getChild(1).getText()
-            alreadyDeclared = False
-            structId = "struct" + structId
-            temp = self.structDictionary.get(structId).varItems
-            if varId not in temp:
-                temp[varId] = varItem(varId, varType, "blockVar", isArray)
-                alreadyDeclared = True
-            else:
-                alreadyDeclared = False
-            self.structDictionary.get(structId).varItems = temp
-            flag =  alreadyDeclared
+            flag = self.addVarS(structId, varType, varId, "blockVar", isArray)
         else:
             flag = self.addVarST(varType, varId, "blockVar", isArray)
 
@@ -124,17 +113,16 @@ class STFiller(DecafListener):
 
     #--------------------------Parameter--------------------------
     def enterParameter(self, ctx: DecafParser.ParameterContext):
-        varType = ctx.getChild(0).getText()
+        paramType = ctx.getChild(0).getText()
 
         if (len(ctx.children) > 2):
             isArray=True
         else:
             isArray = False
         
-        if varType != 'void':
-            varId = ctx.getChild(1).getText()
-
-            flag = self.addVarST(varType, varId, "param", isArray)
+        if paramType != 'void':
+            paramId = ctx.getChild(1).getText()
+            flag = self.addVarST(paramType, paramId, "param", isArray)
 
             if flag:
                 self.nodeTypes[ctx] = 'void'
@@ -148,17 +136,12 @@ class STFiller(DecafListener):
             varId = ctx.getChild(0).getText()
             if (self.structStack == []):
                 structVarType = self.searchVar(varId, self.currentScope)
-                
-                temp = None
-                if structVarType.varType in self.structDictionary:
-                    temp = self.structDictionary[structVarType.varType]
-                self.structStack.append(temp)
+                structToUse = self.searchSST(structVarType.varType) #Search symbol table
+                self.structStack.append(structToUse)
             else:
                 structVarType = self.structStack[-1].varItems[varId]
-                temp = None
-                if structVarType.varType in self.structDictionary:
-                    temp = self.structDictionary[structVarType.varType]
-                self.structStack.append(temp)
+                structToUse = self.searchSST(structVarType.varType) #Search symbol table
+                self.structStack.append(structToUse)
     
     def exitLocation(self, ctx: DecafParser.LocationContext):
         varBeingEvaluated = None
@@ -223,7 +206,7 @@ class STFiller(DecafListener):
     def enterBlock(self, ctx: DecafParser.BlockContext):
         parentCtx = ctx.parentCtx
         firstChild = parentCtx.getChild(0).getText()
-        if firstChild not in self.validVarTypes:
+        if firstChild not in self.primitives:
             newScopeName = 'scope ' + str(self.scopesCounter)+ ' dentro de '+ self.currentMethodName 
             self.scopesCounter = self.scopesCounter + 1
             self.goToScope(newScopeName)
@@ -231,7 +214,7 @@ class STFiller(DecafListener):
             self.nodeTypes[ctx] = 'void'
     
     def exitBlock(self, ctx: DecafParser.BlockContext):
-        currentBlockObj = self.scopeDictionary.get(self.currentScope)
+        currentBlockObj = self.searchMethod(self.currentScope)
         self.goToScope(currentBlockObj.parentKey)
 
     #--------------------------Statement--------------------------
@@ -262,7 +245,7 @@ class STFiller(DecafListener):
         parentType = parentMethod.returnType
         expressionOom = ctx.getChild(1)
         if (ctx.getChild(1).getText() != ""):
-            if (parentType in self.validVarTypes):
+            if (parentType in self.primitives):
                 exprType = self.nodeTypes[expressionOom.getChild(0)]
                 if (exprType == parentType):
                     self.nodeTypes[ctx] = 'void'
@@ -272,7 +255,7 @@ class STFiller(DecafListener):
         else:
             if (parentType == 'void'):
                 self.nodeTypes[ctx] = 'void'
-            elif(parentType in self.validVarTypes):
+            elif(parentType in self.primitives):
                 self.nodeTypes[ctx] = 'error'
                 self.errorsFound.append("linea (" + str(ctx.start.line) + "): se espera que el método retorne un valor")
     
@@ -296,7 +279,7 @@ class STFiller(DecafListener):
     def exitMethodCall(self, ctx: DecafParser.MethodCallContext):
         methodName = ctx.getChild(0).getText()
 
-        methodObj = self.scopeDictionary.get(self.currentScope)
+        methodObj = self.searchMethod(methodName)
 
         if (methodObj != None):
             methodCallTypes = []
@@ -450,6 +433,23 @@ class STFiller(DecafListener):
         self.nodeTypes[ctx] = self.nodeTypes[ctx.getChild(0)]
         
     #--------------------------Métodos del symbol table--------------------------
+    #----agregar nuevo scope al diccionario----
+
+    def addNewScope(self, previousScope, methodType=None):
+        self.scopeDictionary[self.currentScope] = scopeItem(
+                previousScope, 
+                {}, 
+                methodType
+                ) #parent, vars, type
+
+
+    def addScopeST(self, previousScope, methodType=None):
+        if self.currentScope not in self.scopeDictionary:
+            self.addNewScope(previousScope, methodType)
+            return True
+        else:
+            return False
+
     #----agregar nueva variable a symboltable----
     def addVarST(self, varType, varId, varContext, isArray):
         #primero conseguimos el symboltable del scope en el que estamos
@@ -462,23 +462,12 @@ class STFiller(DecafListener):
         else:
             return False
 
-    #----agregar nuevo scope al diccionario----
-    def addScopeST(self, previousScope, methodType=None):
-        if self.currentScope not in self.scopeDictionary:
-            self.scopeDictionary[self.currentScope] = scopeItem(
-                previousScope, 
-                {}, 
-                methodType
-                )
-            return True
-        else:
-            return False
-
-   #----busqueda de variable dentro de un scope----
+    #----busqueda de variable dentro de un scope----
     def searchVar(self, varId, scopeName):
         varEv = None
         #buscamos el symboltable del scope solicitado
         tempST = self.scopeDictionary.get(scopeName).varItems
+        
         if varId in tempST:
             #Si lo encuentra devuelve valor
             varEv = tempST[varId]
@@ -487,7 +476,13 @@ class STFiller(DecafListener):
             newScope = self.scopeDictionary.get(scopeName).parentKey
             if (newScope != None):
                 varEv = self.searchVar(varId, newScope)
+
         return varEv
+
+    #----busqueda de método dentro de un scope----
+    def searchMethod(self, methodId):
+        scopeObject = self.scopeDictionary.get(methodId)
+        return scopeObject
 
     #----get de tipo de método----
     def getMethodType(self, scope):
@@ -508,3 +503,33 @@ class STFiller(DecafListener):
             return True 
         else:
             return False
+            
+    #--------------------------Métodos del symbol table--------------------------
+    #----agregar struct----
+    def addStructST(self, structId):
+        structId = "struct"+structId
+        if structId not in self.structDictionary:
+            self.structDictionary[structId] = structItem(structId=structId, varItems={})
+
+    #funcion que verifica si una variable no esta ya dentro de un contexto
+    #----agregar variable a struct----
+    def addVarS(self, structId, varType, varId, varContext, isArray):
+        alreadyDeclared = False
+        structId = "struct" + structId
+        temp = self.structDictionary.get(structId).varItems
+
+        if varId not in temp:
+            temp[varId] = varItem(varId, varType, varContext, isArray)
+            alreadyDeclared = True
+        else:
+            alreadyDeclared = False
+
+        self.structDictionary.get(structId).varItems = temp
+        return alreadyDeclared
+
+    #----buscar Struct----
+    def searchSST(self, structId):
+        temp = None
+        if structId in self.structDictionary:
+            temp = self.structDictionary[structId]
+        return temp
