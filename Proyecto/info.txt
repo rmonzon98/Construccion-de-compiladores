@@ -1,0 +1,34 @@
+Scopes
+El scope program tiene como padre a None y retorna None
+Sus variables son:
+	la variable con id A es tipo int (isArray: True)
+El scope Minimo tiene como padre a program y retorna int
+Sus variables son:
+	la variable con id i es tipo int (isArray: False)
+	la variable con id Min es tipo int (isArray: False)
+	la variable con id index es tipo int (isArray: False)
+El scope scope 1 dentro de Minimo tiene como padre a Minimo y retorna None
+Sus variables son:
+El scope scope 2 dentro de Minimo tiene como padre a scope 1 dentro de Minimo y retorna None
+Sus variables son:
+El scope Ordenar tiene como padre a program y retorna void
+Sus variables son:
+	la variable con id i es tipo int (isArray: False)
+	la variable con id j es tipo int (isArray: False)
+	la variable con id temp es tipo int (isArray: False)
+El scope scope 1 dentro de Ordenar tiene como padre a Ordenar y retorna None
+Sus variables son:
+	la variable con id Index es tipo int (isArray: False)
+El scope OutputInt tiene como padre a program y retorna void
+Sus variables son:
+	la variable con id n es tipo int (isArray: False)
+El scope InputInt tiene como padre a program y retorna int
+Sus variables son:
+El scope main tiene como padre a program y retorna void
+Sus variables son:
+	la variable con id i es tipo int (isArray: False)
+El scope scope 1 dentro de main tiene como padre a main y retorna None
+Sus variables son:
+El scope scope 2 dentro de main tiene como padre a main y retorna None
+Sus variables son:
+Structs

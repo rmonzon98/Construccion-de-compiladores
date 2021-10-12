@@ -15,11 +15,8 @@ def executeWalker(file):
     treeInfo = STFiller()
     walker = ParseTreeWalker()
     walker.walk(treeInfo, tree)
-
-    info = ''
-
-    info += "Symbol table del archivo " + file 
-    info += "\nScopes" 
+    
+    info = "Scopes" 
     for c, v in treeInfo.scopeDictionary.items():
         if (v.parentKey == None):
             parent = 'None'
@@ -38,7 +35,7 @@ def executeWalker(file):
                 varType = 'None'
             else:
                 varType = varItem.varType
-            info += "\n         la variable con id " + var + " es tipo " + varType + " (isArray: " + str(varItem.isArray) +")"
+            info += "\n\tla variable con id " + var + " es tipo " + varType + " (isArray: " + str(varItem.isArray) +")"
 
     info += '\nStructs'
 
@@ -50,8 +47,10 @@ def executeWalker(file):
                 varType = 'None'
             else:
                 varType = varItem.varType
-            info +="\n         Atributo con nombre " + var + " es tipo VarType " + varType + " (isArray: " + str(varItem.isArray) +")"
+            info +="\n\tAtributo con nombre " + var + " es tipo VarType " + varType + " (isArray: " + str(varItem.isArray) +")"
     
-    print(info)
+    with open("info.txt", "w") as text_file:
+        text_file.write("%s" % info)
+        text_file.close()
 
     return treeInfo.errorsFound

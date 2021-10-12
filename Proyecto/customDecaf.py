@@ -11,6 +11,8 @@ class STFiller(DecafListener):
         self.errorsFound = []
         self.scopeDictionary = {}
         self.structDictionary = {}
+        self.sizeDict = {'int' : 4, 'char' : 1, 'boolean' : 1}
+        self.offset = 0
         self.validVarTypes = [
             'int', 
             'char', 
@@ -45,13 +47,13 @@ class STFiller(DecafListener):
     def enterStructDeclaration(self, ctx: DecafParser.StructDeclarationContext):
         structId = ctx.getChild(1).getText()
         structId = "struct"+structId
-        self.structDictionary[structId] = structItem(structId=structId, varItems={})
+        if structId not in self.structDictionary:
+            self.structDictionary[structId] = structItem(structId=structId, varItems={})
     
     #--------------------------VarDeclaration--------------------------
     def enterVarDeclaration(self, ctx: DecafParser.VarDeclarationContext):
         value = None
         isArray = False
-
 
         #verificamos si hay un literal num dentro del ctx
         if (ctx.NUM() != None):
@@ -68,13 +70,11 @@ class STFiller(DecafListener):
 
         varType = ctx.getChild(0).getText()
         varId = ctx.getChild(1).getText()
-
     
         #se intenta agregar la variable dentro de su scope
         if firstChild == "struct":
-
             structId = parentCtx.getChild(1).getText()
-            flagAdd = self.addVarToStruct(structId, varType, varId, "blockVar", value, isArray)
+            flagAdd = self.addVarToStruct(structId, varType, varId, self.currentScope, value, isArray)
             if flagAdd:
                 self.nodeTypes[ctx] = 'void'
             else:
@@ -82,7 +82,7 @@ class STFiller(DecafListener):
                 self.errorsFound.append("linea (" + str(ctx.start.line) + "): no se logró agregar "+ varId +" al struct ya que ya existía")
 
         else:
-            flagAdd = self.addVarST(varType, varId, "blockVar", isArray)
+            flagAdd = self.addVarST(varType, varId, self.currentScope, value, isArray)
             #En caso de que la variable se repita en el scope mandar mensaje de error
             if flagAdd:
                 self.nodeTypes[ctx] = 'void'
@@ -132,7 +132,7 @@ class STFiller(DecafListener):
         if varType != 'void':
             varId = ctx.getChild(1).getText()
 
-            flag = self.addVarST(varType, varId, "param", isArray)
+            flag = self.addVarST(varType, varId, "param", None, isArray)
 
             if flag:
                 self.nodeTypes[ctx] = 'void'
@@ -146,7 +146,6 @@ class STFiller(DecafListener):
             varId = ctx.getChild(0).getText()
             if (self.structStack == []):
                 structVarType = self.searchVar(varId, self.currentScope)
-                
                 temp = None
                 if structVarType.varType in self.structDictionary:
                     temp = self.structDictionary[structVarType.varType]
@@ -161,11 +160,12 @@ class STFiller(DecafListener):
     def exitLocation(self, ctx: DecafParser.LocationContext):
         varBeingEvaluated = None
 
+        #------En caso de que location tenga un location como hijo entra en este bloque------
         if (ctx.location() != None):
             if self.structStack != []:
-                currentTable = self.structStack.pop()
-                if (currentTable != None):
-                    varBeingEvaluated = currentTable.varItems[ctx.getChild(0).getText()]
+                currentStruct = self.structStack.pop()
+                if (currentStruct != None):
+                    varBeingEvaluated = currentStruct.varItems[ctx.getChild(0).getText()]
                     if (varBeingEvaluated != None):
                         self.nodeTypes[ctx] = self.nodeTypes[ctx.location()]
                     else:
@@ -182,18 +182,19 @@ class STFiller(DecafListener):
                 else:
                     self.nodeTypes[ctx] = 'error'
                     self.errorsFound.append("linea (" + str(ctx.start.line) + "): esta variable no ha sido definida anteriormente")
-
+        
+        #------En caso de que el ctx evaluado sea hijo de un location y no tenga un location como hijo------
         elif (type(ctx.parentCtx) == DecafParser.LocationContext and ctx.location() == None):
             if self.structStack != []:
-                currentTable = self.structStack.pop()
-                if (currentTable != None):
-                    varBeingEvaluated = currentTable.varItems[ctx.getChild(0).getText()]
+                currentStruct = self.structStack.pop()
+                if (currentStruct != None):
+                    varBeingEvaluated = currentStruct.varItems[ctx.getChild(0).getText()]
                     if (varBeingEvaluated != None):                      
                         self.nodeTypes[ctx] = varBeingEvaluated.varType                                 
-                if (currentTable == None or varBeingEvaluated == None):
+                if (currentStruct == None or varBeingEvaluated == None):
                     self.nodeTypes[ctx] = 'error'
                     self.errorsFound.append("linea (" + str(ctx.start.line) + "): el struct no tiene esta propiedad")
-
+        
         else:
             varBeingEvaluated = self.searchVar(ctx.getChild(0).getText(), self.currentScope)
             if (varBeingEvaluated != None):
@@ -202,10 +203,15 @@ class STFiller(DecafListener):
                 self.nodeTypes[ctx] = 'error'
                 self.errorsFound.append("linea (" + str(ctx.start.line) + "): la variable no se ha sido definida en este contexto previamente")
 
+        #------Validación de la parte del expression------
         if (ctx.expression()): 
+            if(self.nodeTypes[ctx.expression()] != 'int'):
+                self.nodeTypes[ctx] = 'error'
+                self.errorsFound.append("linea (" + str(ctx.start.line) + "): se necesita un indice entero")
+
             if (type(ctx.expression()) == DecafParser.Ex_minuContext):
                 self.nodeTypes[ctx] = 'error'
-                self.errorsFound.append("linea (" + str(ctx.start.line) + "): ya existe un parametro con ese nombre")
+                self.errorsFound.append("linea (" + str(ctx.start.line) + "): se necesita un indice natural")
 
             if (varBeingEvaluated != None):
                 if(not varBeingEvaluated.isArray):
@@ -254,10 +260,6 @@ class STFiller(DecafListener):
             self.nodeTypes[ctx] = 'error'
             self.errorsFound.append("linea (" + str(ctx.start.line) + "): el statement dentro del while debe ser una expresión booleana")
     
-    def exitexpressionOom(self, ctx:DecafParser.expressionOom):
-        self.nodeTypes[ctx] = self.nodeTypes[ctx.expressionOom]
-
-
     #------return------
     def exitSt_return(self, ctx: DecafParser.StatementContext):
         
@@ -297,37 +299,50 @@ class STFiller(DecafListener):
     def exitSt_assig(self, ctx: DecafParser.St_assigContext):
         operator1 = ctx.getChild(0)
         operator2 = ctx.getChild(2)
-        type1 = self.nodeTypes[operator1]
-        type2 = self.nodeTypes[operator2]
-        if(type1 == type2):
+        print("location "+self.nodeTypes[operator1])
+        print(self.nodeTypes[operator2])
+        if(self.nodeTypes[operator1] == self.nodeTypes[operator2]):
             self.nodeTypes[ctx] = self.nodeTypes[operator1]
         else:
+            print(operator2.getText())
             self.nodeTypes[ctx] = 'error'
             self.errorsFound.append("linea (" + str(ctx.start.line) + "): los operandos deben ser del mismo tipo")
 
     #------methodcall------
     def exitMethodCall(self, ctx: DecafParser.MethodCallContext):
-        methodObj = self.scopeDictionary.get(self.currentScope)
-
-        if (methodObj != None):
-            methodCallTypes = []
-
+        methName = ctx.getChild(0).getText()
+        methInfo = self.scopeDictionary.get(methName)
+        if (methInfo != None):
+            methTypes = []
             for i in range(0, len(ctx.children)):
                 if i > 1 and i < len(ctx.children)-1:
                     if (ctx.getChild(i).getText() != ","):
-                        methodCallTypes.append(self.nodeTypes[ctx.getChild(i)])
-            
-
-            paramsEquality = self.compareParameters(methodObj, methodCallTypes)
-
+                        methTypes.append(self.nodeTypes[ctx.getChild(i)])
+            paramsEquality = self.compareParameters(methInfo, methTypes)
             if paramsEquality:
-                self.nodeTypes[ctx] = methodObj.returnType
+                self.nodeTypes[ctx] = methInfo.returnType
             else:                
                 self.nodeTypes[ctx] = 'error'
                 self.errorsFound.append("linea (" + str(ctx.start.line) + "): los parametros no son correctos")
         else:
             self.nodeTypes[ctx] = 'error'
             self.errorsFound.append("linea (" + str(ctx.start.line) + "): este método no ha sido declarado")
+    
+    #----comparación de parametros----
+    #esta función verifica que cuando se llama una función tenga la cantidad y tipo de parametros correctos
+    def compareParameters(self, methodObj, methodCallTypes):
+        symbolTable = methodObj.varItems
+        methodDeclarationTypes = []
+        for varId, varItem in symbolTable.items():
+            if varItem.varContext == "param":
+                methodDeclarationTypes.append(varItem.varType)
+        if (methodCallTypes == methodDeclarationTypes):
+            return True 
+        else:
+            return False
+
+    def exitexpressionOom(self, ctx:DecafParser.expressionOom):
+        self.nodeTypes[ctx] = self.nodeTypes[ctx.expressionOom]
 
     #--------------------------Expression--------------------------
     #------mtdc------
@@ -478,12 +493,26 @@ class STFiller(DecafListener):
 
     #--------------------------Métodos del symbol table--------------------------
     #----agregar nueva variable a symboltable----
-    def addVarST(self, varType, varId, varContext, isArray):
+    def addVarST(self, varType, varId, varContext, value, isArray):
+        if (value == None): 
+            value = 1
+        try:
+            size = int(self.sizeDict.get(varType)*value)
+        except:
+            size = 0
+        
         #primero conseguimos el symboltable del scope en el que estamos
         temp = self.scopeDictionary.get(self.currentScope).varItems
         if varId not in temp:
             #Si no encuentra la variable dentro del symbolTable
-            temp[varId] = varItem(varId, varType, varContext, isArray)
+            temp[varId] = varItem(varId = varId, 
+            varType = varType, 
+            isArray = isArray,
+            arrayLen= value,
+            varContext= varContext, 
+            size= size, 
+            offset= self.offset)
+            self.offset += size
             self.scopeDictionary.get(self.currentScope).varItems = temp
             return True
         else:
@@ -523,30 +552,32 @@ class STFiller(DecafListener):
             scopeObject = self.getMethodType(scopeObject.parentKey)
         return scopeObject
         
-    #----comparación de parametros----
-    #esta función verifica que cuando se llama una función tenga la cantidad y tipo de parametros correctos
-    def compareParameters(self, methodObj, methodCallTypes):
-        symbolTable = methodObj.varItems
-        methodDeclarationTypes = []
-        for varId, varItem in symbolTable.items():
-            if varItem.varContext == "param":
-                methodDeclarationTypes.append(varItem.varType)
-        if (methodCallTypes == methodDeclarationTypes):
-            return True 
-        else:
-            return False
+    
 
     #----addVarToStruct----
     #Agrega variable a struct
     def addVarToStruct(self, structId, varType, varId, varContext, num, isArray):
-        if (num == None): num = 1
+        if (num == None): 
+            num = 1
         canAdd = False
+        
+        try:
+            size = int(self.sizeDict.get(varType)*num)
+        except:
+            size = 0
 
         structId = "struct"+structId
         tempStructMembers = self.structDictionary.get(structId).varItems
 
         if varId not in tempStructMembers:
-            tempStructMembers[varId] = varItem(varId, varType, varContext, isArray)
+            tempStructMembers[varId] = varItem(varId = varId, 
+            varType = varType, 
+            isArray = isArray,
+            arrayLen= num,
+            varContext= varContext, 
+            size= size, 
+            offset= self.offset)
+            self.offset += size
             canAdd = True
         else:
             canAdd = False
