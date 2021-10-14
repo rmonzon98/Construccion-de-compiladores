@@ -28,14 +28,14 @@ def executeWalker(file):
         else:
             returnType = v.returnType
 
-        info += "\nEl scope "+c+ " tiene como padre a "+ parent+ " y retorna " + returnType
+        info += "\nEl scope "+c+ " tiene como padre a "+ parent+ " y retorna " + returnType + " su offset es " + str(treeInfo.scopeDictionary.get(c).offset)
         info +="\nSus variables son:"
         for var, varItem in v.varItems.items():
             if (varItem.varType == None):
                 varType = 'None'
             else:
                 varType = varItem.varType
-            info += "\n\tla variable con id " + var + " es tipo " + varType + " (isArray: " + str(varItem.isArray) +")"
+            info += "\n\tla variable con id " + var + " es tipo " + varType + " (isArray: " + str(varItem.isArray) +")" + " su context es " + varItem.varContext + " su offset es " + str(varItem.offset)
 
     info += '\nStructs'
 
@@ -47,10 +47,16 @@ def executeWalker(file):
                 varType = 'None'
             else:
                 varType = varItem.varType
-            info +="\n\tAtributo con nombre " + var + " es tipo VarType " + varType + " (isArray: " + str(varItem.isArray) +")"
+            info +="\n\tAtributo con nombre " + var + " es tipo VarType " + varType + " (isArray: " + str(varItem.isArray) +")" + " su context es " + varItem.varContext + " su offset es " + varItem.offset
     
     with open("info.txt", "w") as text_file:
         text_file.write("%s" % info)
         text_file.close()
+
+    
+    with open("ic.txt", "w") as text_file:
+        text_file.write("%s" % treeInfo.intCode)
+        text_file.close()
+    
 
     return treeInfo.errorsFound
