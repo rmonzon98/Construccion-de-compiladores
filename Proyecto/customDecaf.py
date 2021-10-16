@@ -446,6 +446,8 @@ class STFiller(DecafListener):
     #------Codigo intermedio------
     def enterSt_if(self, ctx: DecafParser.St_ifContext):
         #If
+        self.blockCounter += 1
+        self.ifFlag = False
         trueL = "block"+str(self.blockCounter)+"T"
         nextL = "block"+str(self.blockCounter)+"N"
         nextA = self.newInputInfo(3, addNext= nextL)
@@ -458,7 +460,7 @@ class STFiller(DecafListener):
         else: 
             falseL = nextL
             expAdd = self.newInputInfo(2, addLabelTrue = trueL, addLabelFalse = falseL)
-
+        
         self.addresses[ctx.getChild(2)] = expAdd
         self.addresses[ctx.getChild(4)] = nextA
 

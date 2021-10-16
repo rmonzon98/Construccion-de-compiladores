@@ -1,16 +1,21 @@
 
 label_factorial:
-	if FACTORIAL[0]==0 goto block0T
-	goto block0F
-	block0T:
+	if FACTORIAL[0]==0 goto block1T
+	goto block1F
+	block1T:
 	return 1 
-	goto block0N
-	block0F:
+	if FACTORIAL[0]==2 goto block2T
+	goto block2N
+	block2T:
+	FACTORIAL[0] = 2
+	block2N:
+	goto block1N
+	block1F:
 	r0=FACTORIAL[0]-1
 	param r0
 	r1=FACTORIAL[0]*Call factorial
 	return r1 
-	block0N:
+	block1N:
 end label_factorial
 label_main:
 	r2=0+0

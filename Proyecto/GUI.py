@@ -53,7 +53,7 @@ userI = tk.Tk()
 userI.title("Proyecto de construcción de compiladores")
 
 #-----------root------------------
-userI.rowconfigure(0, minsize=800, weight=1)
+userI.rowconfigure(0, minsize=700, weight=1)
 userI.columnconfigure(0)
 userI.columnconfigure(1)
 userI.columnconfigure(2)
@@ -61,7 +61,7 @@ userI.columnconfigure(3)
 
 ##------frame code------
 code_frame = ttk.Frame(userI)
-code_frame.rowconfigure(0, minsize=800, weight=1)
+code_frame.rowconfigure(0, minsize=700, weight=1)
 code_frame.columnconfigure(0, minsize=150, weight=1)
 txt_edit = tk.Text(code_frame)
 txt_edit.grid(row=0, column=0, sticky="NSEW")
@@ -69,7 +69,7 @@ code_frame.grid(column=0, row=0)
 
 #------frame errors/ci------
 ci_frame = ttk.Frame(userI)
-ci_frame.rowconfigure(0, minsize=800, weight=1)
+ci_frame.rowconfigure(0, minsize=700, weight=1)
 ci_frame.columnconfigure(0, weight=1)
 label_ci = tk.Text(ci_frame)
 label_ci.grid(row=0, column=0, sticky="NSEW", padx=5, pady=5)
