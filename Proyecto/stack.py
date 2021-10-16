@@ -14,14 +14,17 @@ class varItem():
         
 
 class scopeItem():
-    def __init__(self, parentKey, varItems, returnType, offset = 0):
+    def __init__(self, parentKey, varItems, returnType, offset = 0, code = "Ninguno"):
         self.parentKey = parentKey
         self.returnType = returnType
         self.varItems = varItems
         self.offset = offset
+        self.code = code
 
 class structItem():
-    def __init__(self, structId, varItems):
+    def __init__(self, structId, varItems,offset = 0,size=0):
         self.structId = structId
         self.varItems = varItems
+        self.offset = offset
+        self.size = offset  
 

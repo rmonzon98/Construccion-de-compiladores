@@ -14,10 +14,10 @@ def abrir():
     if not filepath:
         return
     txt_edit.delete(1.0, tk.END)
+    label_ci.delete(1.0, tk.END)
     with open(filepath, "r") as input_file:
         text = input_file.read()
         txt_edit.insert(tk.END, text)
-    label_ci.insert(tk.END, "")
 
 def guardar():
     filepath = asksaveasfilename(
@@ -33,6 +33,8 @@ def guardar():
     
 
 def ejecutar():
+    print("se ejecuta?")
+    label_ci.delete(1.0, tk.END)
     filepath = 'executiontemp.decaf'
     with open(filepath, "w") as output_file:
         text = txt_edit.get(1.0, tk.END)

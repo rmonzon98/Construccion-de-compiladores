@@ -1,0 +1,32 @@
+class Program {
+
+    void funcTest2(){
+        int j;
+        j = 2 + 3;
+    }
+
+    int funcTest(){
+        int j;
+        int k;
+        k = 1;
+        j = 2;
+        return j;
+    }
+
+    void main() {
+        int i;
+        int j;
+        i = 2;
+        j = 1;
+        i = j +2;
+        if (i == 0)
+        {
+            i = 2;
+        }
+        else
+        {
+            i = 3;
+        }
+    }
+}
+         

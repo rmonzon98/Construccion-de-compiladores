@@ -1,4 +1,7 @@
+from typing import Dict
 from antlr4 import *
+import antlr4
+from antlr4.atn.LexerATNSimulator import SimState
 from antlr4.tree.Trees import TerminalNode
 from antlr4.error.Errors import *
 from antlr.DecafLexer import DecafLexer
@@ -36,9 +39,12 @@ class STFiller(DecafListener):
         self.inputInfo = {}
         self.addresses = {}
         self.quadTable = []
+        self.offsetByScope = {}
         self.tempCounter = 0
         self.blockCounter = 0
+        self.whileCounter = 0
         self.intCode = ''
+        self.currentCode = ""
 
         self.addScopeST(None)
     
@@ -46,40 +52,99 @@ class STFiller(DecafListener):
     def goToScope(self, scope):
         self.previousScope = self.currentScope
         self.currentScope = scope
+        if ( "Inside" in self.currentScope):
+            pass
+        else:
+            self.currentCode = self.currentScope
 
     #--------------------------program--------------------------
     def exitProgram(self, ctx: DecafParser.ProgramContext):
         if not self.mainDeclarated:
             self.nodeTypes[ctx] = 'error'
             self.errorsFound.append("linea (" + str(ctx.start.line) + "): metodo main no declarado")
+
+        #------Se traducen todos los quaditems dentro de la tabla------
         ic = ''
+        #---Se recorre toda la tabla---
         for quad in self.quadTable:
-            if (quad.operator == "newArray"):
-                ic += "\n\t" + quad.result.get('address') + "=" + str(quad.argument1.get('address')) + "*" + str(quad.argument2.get('address'))
-            elif (quad.operator == '<' or quad.operator== '<=' or quad.operator == '>' or quad.operator == '>=' or quad.operator == '==' or quad.operator == '!='):
+            #If y whiles
+            if (quad.operator in ['<', '<=', '>', '>=', '==', '!=']):
                 ic += '\n\tif ' + str(quad.argument1.get('address')) + quad.operator + str(quad.argument2.get('address')) + ' goto ' + quad.result.get('lblTrue')
+            
+            #Impresion de etiqueta de Inicio de metodo o bloque
             elif (quad.operator == "label"):
                 if (quad.argument1 != None):
                     ic += "\n" +str(quad.argument1.get('address')) + ":"
-            elif (quad.operator == "labelend"):
+            
+            #Etiqueta para fin de metodo
+            elif (quad.operator == "labelEndMeth"):
                 if (quad.argument1 != None):
                     ic += "\n" +str(quad.argument1.get('address'))
-            elif (quad.operator == "labelt"):
+            
+            #Impresion de return y su valor que retorna
+            elif (quad.operator == "return"):
+                argument1 = quad.argument1.get('address')
+                if (type(argument1) == dict):
+                    argument1 = argument1.get('address')
+                if (quad.argument1 != None):
+                    ic += "\n\treturn " + argument1 +" "
+            
+            #Impresion de etiqueta de verdadero
+            elif (quad.operator == "labelTrue"):
                 ic += "\n\t" +quad.argument1.get('lblTrue') + ":"
-            elif (quad.operator == "labelf"):
+            
+            #Impresion de etiqueta de falso
+            elif (quad.operator == "labelFalse"):
                 ic += "\n\t" +quad.argument1.get('lblFalse') + ":"
-            elif (quad.operator == "labeln"):
-                ic += "\n\t" +quad.argument1.get('lblNext') + ":"
-            elif (quad.operator == "GOTON"):
+
+            #Impresion de etiqueta de siguiente bloque
+            elif (quad.operator == "labelNext"):
+                ic += "\n\t" + str(quad.argument1.get('lblNext')) + ":"
+
+            #Impresion de etiqueta para ir a siguiente etiqueta
+            elif (quad.operator == "goToNext"):
                 ic += "\n\tgoto " + str(quad.argument1.get('lblNext'))
-            elif (quad.operator == "GOTOF"):
+
+            #Asignaciones (sin operaciones dentro)
+            elif (quad.operator == "="):
+                argument1 = quad.argument1.get('address')
+                result = quad.result.get('address')
+                if (type(argument1) == dict):
+                    argument1 = argument1.get('address')
+                if (type(result) == dict):
+                    result = result.get('address')
+                ic += "\n\t" + argument1 + " " + quad.operator + " " + result
+
+            #Impresión de etiqueta de false
+            elif (quad.operator == "goToFalse"):
                 ic += "\n\tgoto " + quad.argument1.get('lblFalse')
+            #Cuando no tiene operador es porque solo deseo poner la etiqueta del address (p.e. methodcall)
+
+            elif (quad.operator == ""):
+                ic += "\n\t" + str(quad.argument1.get('address'))
+
+            #Cuando se desea imprimir una variable de algún scope
             elif (quad.result == None):
                 ic += "\n\t" + quad.operator + " " + str(quad.argument1.get('address'))
+
+            #Asignaciones (con operaciones dentro)
             elif (quad.argument2 != None):
-                ic += "\n\t" + str(quad.result.get('address')) + "=" + quad.argument1.get('address')  + quad.operator + quad.argument2.get('address') 
+                try:
+                    argument1 = quad.argument1.get('address')
+                    argument2 = quad.argument2.get('address')
+                    if (type(argument1) == dict):
+                        argument1 = argument1.get('address')
+                    if (type(argument2) == dict):
+                        argument2 = argument2.get('address')
+                    print("\n\t" + str(quad.result.get('address')) + "=" + argument1  + quad.operator + argument2+"\t 2")
+                    ic += "\n\t" + str(quad.result.get('address')) + "=" + argument1  + quad.operator + argument2
+                except:
+                    print("error")
+
+            #Este no afecta realmente (pruebas)
             elif (quad.argument2 == None):
                 ic += "\n\t" + str(quad.result.get('address')) + "=" + quad.operator + str(quad.argument1.get('address'))
+        
         self.intCode=ic
 
 
@@ -88,8 +153,15 @@ class STFiller(DecafListener):
         structId = ctx.getChild(1).getText()
         structId = "struct"+structId
         if structId not in self.structDictionary:
-            self.structDictionary[structId] = structItem(structId=structId, varItems={})
+            self.structDictionary[structId] = structItem(structId=structId, varItems={}, offset = self.offset)
+            self.currentCode = structId
     
+    def exitStructDeclaration(self, ctx: DecafParser.StructDeclarationContext):
+        structId = ctx.getChild(1).getText()
+        struct = self.structDictionary.get("struct"+structId)
+        struct.size = self.offset - struct.size 
+        self.structDictionary[struct.structId] = struct
+
     #--------------------------VarDeclaration--------------------------
     def enterVarDeclaration(self, ctx: DecafParser.VarDeclarationContext):
         value = None
@@ -165,10 +237,15 @@ class STFiller(DecafListener):
         self.scopesCounter = 1
         self.currentMethodName = "program"
         self.goToScope("program")
+
         #------Codigo intermedio------
         labelMethod = "end label_"+methodName
         newAdd = self.newInputInfo(1, AddLit = labelMethod)
-        self.quadTable.append(quadrupleItem("labelend",newAdd, None, None))
+        self.quadTable.append(quadrupleItem("labelEndMeth",newAdd, None, None))
+    
+    #--------------------------Parameter--------------------------
+    def exitExpressionOom(self, ctx: DecafParser.ExpressionOomContext):
+        self.addresses[ctx] = ctx
 
     #--------------------------Parameter--------------------------
     def enterParameter(self, ctx: DecafParser.ParameterContext):
@@ -218,6 +295,7 @@ class STFiller(DecafListener):
                     varBeingEvaluated = currentStruct.varItems[ctx.getChild(0).getText()]
                     if (varBeingEvaluated != None):
                         self.nodeTypes[ctx] = self.nodeTypes[ctx.location()]
+                        self.addresses[ctx] = self.newInputInfo(4, addVarLabel= varBeingEvaluated.label, addVarOffset= varBeingEvaluated.offset)
                     else:
                         self.nodeTypes[ctx] = 'error'
                         self.errorsFound.append("No existe tal propiedad dentro del struct")
@@ -229,6 +307,7 @@ class STFiller(DecafListener):
 
                 if (varBeingEvaluated != None):
                     self.nodeTypes[ctx] = self.nodeTypes[ctx.location()]
+                    self.addresses[ctx] = self.newInputInfo(4, addVarLabel= varBeingEvaluated.label, addVarOffset= varBeingEvaluated.offset)
                 else:
                     self.nodeTypes[ctx] = 'error'
                     self.errorsFound.append("linea (" + str(ctx.start.line) + "): esta variable no ha sido definida anteriormente")
@@ -240,7 +319,8 @@ class STFiller(DecafListener):
                 if (currentStruct != None):
                     varBeingEvaluated = currentStruct.varItems[ctx.getChild(0).getText()]
                     if (varBeingEvaluated != None):                      
-                        self.nodeTypes[ctx] = varBeingEvaluated.varType                                 
+                        self.nodeTypes[ctx] = varBeingEvaluated.varType   
+                        self.addresses[ctx] = self.newInputInfo(4, addVarLabel= varBeingEvaluated.label, addVarOffset= varBeingEvaluated.offset)                              
                 if (currentStruct == None or varBeingEvaluated == None):
                     self.nodeTypes[ctx] = 'error'
                     self.errorsFound.append("linea (" + str(ctx.start.line) + "): el struct no tiene esta propiedad")
@@ -249,7 +329,7 @@ class STFiller(DecafListener):
             varBeingEvaluated = self.searchVar(ctx.getChild(0).getText(), self.currentScope)
             if (varBeingEvaluated != None):
                 self.nodeTypes[ctx] = varBeingEvaluated.varType
-                self.addresses[ctx] = self.newInputInfo(4, addvar = varBeingEvaluated.label)
+                self.addresses[ctx] = self.newInputInfo(4, addVarLabel= varBeingEvaluated.label, addVarOffset= varBeingEvaluated.offset)
             else:
                 self.nodeTypes[ctx] = 'error'
                 self.errorsFound.append("linea (" + str(ctx.start.line) + "): la variable no se ha sido definida en este contexto previamente")
@@ -260,33 +340,21 @@ class STFiller(DecafListener):
                 self.nodeTypes[ctx] = 'error'
                 self.errorsFound.append("linea (" + str(ctx.start.line) + "): se necesita un indice entero")
                 return
-                
             if (type(ctx.expression()) == DecafParser.Ex_minuContext):
                 self.nodeTypes[ctx] = 'error'
                 self.errorsFound.append("linea (" + str(ctx.start.line) + "): se necesita un indice natural")
                 return
-
             if (varBeingEvaluated != None):
                 if(not varBeingEvaluated.isArray):
                     self.nodeTypes[ctx] = 'error'
                     self.errorsFound.append("linea (" + str(ctx.start.line) + "): " + varBeingEvaluated.varId + " no es un array")
                     return
-                
-                #------Codigo intermedio------
-                getTemp = self.getTemp()
-                tempAdd = self.newInputInfo(1, AddLit = getTemp)
-                self.addresses[ctx] = self.newInputInfo(4, addvar = varBeingEvaluated.label)
-                expAdd = self.addresses[ctx.expression]
-                width = str(self.sizeDict.get(varBeingEvaluated.varType))
-                self.quadTable.append(quadrupleItem("newArray", expAdd, self.newInputInfo(1,AddLit= width), tempAdd))
-
-                #self.addresses[ctx] =
-
+            self.addresses[ctx] = self.newInputInfo(4, addVarLabel= varBeingEvaluated.label, addVarOffset= varBeingEvaluated.offset)
         else:
             if (varBeingEvaluated != None):
                 if(varBeingEvaluated.isArray):
                     self.nodeTypes[ctx] = 'error'
-                    self.errorsFound.append("linea (" + str(ctx.start.line) + "): " + varBeingEvaluated.varId + " necesita un indice")
+                    self.errorsFound.append("linea (" + str(ctx.start.line) + "): " + varBeingEvaluated.varId + " necesita un indice")        
 
     #--------------------------Block--------------------------
     def enterBlock(self, ctx: DecafParser.BlockContext):
@@ -300,18 +368,22 @@ class STFiller(DecafListener):
             self.nodeTypes[ctx] = 'void'
         
         #------Codigo intermedio------
-
+        
         #En caso de que el padre sea un if else
         if (type(parentCtx) == DecafParser.St_ifContext):
             exprAddr = self.addresses[parentCtx.getChild(2)]
             if (not(self.ifFlag)):
-                self.quadTable.append(quadrupleItem("labelt", exprAddr, None, None))
+                self.quadTable.append(quadrupleItem("labelTrue", exprAddr, None, None))
                 self.ifFlag = True
             else:
                 next = self.addresses[parentCtx.getChild(4)]
-                self.quadTable.append(quadrupleItem("GOTON", next, None, None))
-                self.quadTable.append(quadrupleItem("labelf", exprAddr, None, None))
+                self.quadTable.append(quadrupleItem("goToNext", next, None, None))
+                self.quadTable.append(quadrupleItem("labelFalse", exprAddr, None, None))
 
+        #En caso de que el padre sea un while
+        if (type(parentCtx) == DecafParser.St_whileContext):
+            exprAddr = self.addresses[parentCtx.getChild(2)]
+            self.quadTable.append(quadrupleItem("labelTrue", exprAddr, None, None))
 
     
     def exitBlock(self, ctx: DecafParser.BlockContext):
@@ -324,14 +396,14 @@ class STFiller(DecafListener):
     #------Codigo intermedio------
     def enterSt_if(self, ctx: DecafParser.St_ifContext):
         #If
-        trueL = "blockContext"+str(self.blockCounter)+".true"
-        nextL = "blockContext"+str(self.blockCounter)+".next"
+        trueL = "block"+str(self.blockCounter)+"T"
+        nextL = "block"+str(self.blockCounter)+"N"
         nextA = self.newInputInfo(3, addNext= nextL)
 
         #Else
         lenCtx = len(ctx.children)
         if (lenCtx > 5):
-            falseL = "blockContext"+str(self.blockCounter)+".false"
+            falseL = "block"+str(self.blockCounter)+"F"
             expAdd = self.newInputInfo(2, addLabelTrue = trueL, addLabelFalse = falseL)
         else: 
             falseL = nextL
@@ -347,7 +419,7 @@ class STFiller(DecafListener):
             self.nodeTypes[ctx] = 'boolean'
                       
             #------Codigo intermedio------
-            self.quadTable.append(quadrupleItem("labeln", self.addresses[ctx.getChild(4)], None, None))
+            self.quadTable.append(quadrupleItem("labelNext", self.addresses[ctx.getChild(4)], None, None))
             
         else:
             self.nodeTypes[ctx] = 'error'
@@ -355,11 +427,22 @@ class STFiller(DecafListener):
     
     
     #------while------
+    def enterSt_while(self, ctx: DecafParser.St_whileContext):
+        self.addresses[ctx.getChild(2)] = self.newInputInfo(2, addLabelTrue="blockWhile" + str(self.whileCounter) + "T", addLabelFalse="blockWhile" + str(self.whileCounter) + "N")
+        self.addresses[ctx.getChild(4)] = self.newInputInfo(3, addNext = "while" + str(self.whileCounter) + ".begin")
+        self.quadTable.append(quadrupleItem("labelNext", self.addresses[ctx.getChild(4)], None, None))
+
+
     def exitSt_while(self, ctx: DecafParser.St_whileContext): 
         operator = ctx.getChild(2)
         typeOp = self.nodeTypes[operator]
         if(typeOp == 'boolean'):
             self.nodeTypes[ctx] = 'boolean'
+            #------Codigo intermedio------
+            self.addresses[ctx.getChild(2)] = self.newInputInfo(2, addLabelTrue="blockWhile" + str(self.whileCounter) + "T", addLabelFalse="blockWhile" + str(self.whileCounter) + "N")
+            self.exitEx_ar3(ctx.getChild(2))
+            self.quadTable.append(quadrupleItem("labelNext", {'lblNext' : "blockWhile" + str(self.whileCounter) + "N"}, None, None))
+            self.whileCounter += 1
         else:
             self.nodeTypes[ctx] = 'error'
             self.errorsFound.append("linea (" + str(ctx.start.line) + "): el statement dentro del while debe ser una expresión booleana")
@@ -383,6 +466,22 @@ class STFiller(DecafListener):
                 exprType = self.nodeTypes[ctx.getChild(1).getChild(0)]
                 if (exprType == parentType):
                     self.nodeTypes[ctx] = 'void'
+                    '''
+                    childrenCtx = self.addresses[ctx.getChild(1)]
+                    childrenexp = ''
+                    for i in range(0, len(childrenCtx.children)):
+                        childrenexp += " "+childrenCtx.getChild(i).getText()
+                    labelMethod = childrenexp
+                    '''
+                    try:
+                        child = ctx.getChild(1)
+                        grandChild = child.getChild(0)
+                        newAdd = self.newInputInfo(1, AddLit = self.addresses[grandChild])
+                        self.quadTable.append(quadrupleItem("return",newAdd, None, None))
+                    except:
+                        newAdd = self.newInputInfo(1, AddLit = self.addresses[ctx.getChild(1)])
+                        self.quadTable.append(quadrupleItem("return",newAdd, None, None))
+                    
                 else:
                     if (parentType == 'void'):
                         self.nodeTypes[ctx] = 'error'
@@ -408,12 +507,25 @@ class STFiller(DecafListener):
             self.nodeTypes[ctx] = self.nodeTypes[operator1]
 
             #------codigo intermedio------
-            #self.quadTable.append(quadrupleItem("", self.addresses[operator2], None, self.addresses[operator1]))
+            try:
+                #print(self.addresses[operator1])
+                #print(self.addresses[operator2])
+                #print(self.nodeTypes[ctx.getChild(0)])
+                #print(ctx.getChild(0).getText()+" "+ctx.getChild(1).getText()+" "+ctx.getChild(2).getText())
+                self.quadTable.append(quadrupleItem("=", self.addresses[operator1], None, self.addresses[operator2]))
+            except:
+                #print(self.addresses[operator1])
+                #print(self.addresses[operator2])
+                pass
+            
             
         else:
             self.errorsFound.append("linea (" + str(ctx.start.line) + "): los operandos deben ser del mismo tipo")
 
     #------methodcall------
+    #def enterMethodCall(self, ctx: DecafParser.MethodCallContext):
+
+
     def exitMethodCall(self, ctx: DecafParser.MethodCallContext):
         methName = ctx.getChild(0).getText()
         methInfo = self.scopeDictionary.get(methName)
@@ -426,6 +538,31 @@ class STFiller(DecafListener):
             paramsEquality = self.compareParameters(methInfo, methTypes)
             if paramsEquality:
                 self.nodeTypes[ctx] = methInfo.returnType
+
+                #------codigo intermedio------
+                #---se establecen los parametros---
+                lenChildren = len(ctx.children)
+                for child in range(0,lenChildren):
+                    if ((child > 1) and (child < lenChildren-1) and ctx.getChild(child) != ","):
+                        try:
+                            self.quadTable.append(quadrupleItem("param", self.addresses[ctx.getChild(child)], None, None))
+                        except:
+                            pass
+                
+                #---se llama a la función---
+                parent = ctx.parentCtx
+                grandParent = parent.parentCtx
+                if(str(grandParent.getChild(0)) == "{"):
+                    labelMeth = "Call "+methName
+                    methAdd = self.newInputInfo(5,addvar=labelMeth)
+                    self.quadTable.append(quadrupleItem("", methAdd, None, None))
+                    self.addresses[ctx] = self.newInputInfo(1, AddLit= methAdd)
+                else:
+                    labelMeth = "Call "+methName
+                    methAdd = self.newInputInfo(5,addvar=labelMeth)
+                    self.addresses[ctx] = self.newInputInfo(1, AddLit= methAdd)
+                
+
             else:                
                 self.nodeTypes[ctx] = 'error'
                 self.errorsFound.append("linea (" + str(ctx.start.line) + "): los parametros no son correctos")
@@ -448,11 +585,13 @@ class STFiller(DecafListener):
 
     def exitexpressionOom(self, ctx:DecafParser.expressionOom):
         self.nodeTypes[ctx] = self.nodeTypes[ctx.expressionOom]
+        self.addresses[ctx] = self.addresses[ctx.getChild(0)]
 
     #--------------------------Expression--------------------------
     #------mtdc------
     def exitEx_mtdc(self, ctx: DecafParser.Ex_mtdcContext):
         self.nodeTypes[ctx] = self.nodeTypes[ctx.getChild(0)]
+        self.addresses[ctx] = self.addresses[ctx.getChild(0)]
 
     #------loc------    
     def exitEx_loc(self, ctx: DecafParser.Ex_locContext):
@@ -467,7 +606,10 @@ class STFiller(DecafListener):
         print("3")
         print(self.addresses)
         '''
-        self.addresses[ctx] = self.addresses[ctx.getChild(0)]
+        try:
+            self.addresses[ctx] = self.addresses[ctx.getChild(0)]
+        except:
+            pass
 
     #------literal------
     def exitEx_lite(self, ctx: DecafParser.Ex_liteContext):
@@ -507,7 +649,11 @@ class STFiller(DecafListener):
     def exitEx_par(self, ctx: DecafParser.Ex_parContext):
         self.nodeTypes[ctx] = self.nodeTypes[ctx.expression()]
         #------codigo intermedio------
-        self.addresses[ctx] = self.addresses[ctx]
+        try:
+            self.addresses[ctx] = self.addresses[ctx.expression()]
+        except:
+            #print('error con parentesis')
+            pass
 
     #------aritmetica------
     #----5----
@@ -526,7 +672,11 @@ class STFiller(DecafListener):
             #------codigo intermedio------
             getTemp = self.getTemp()
             self.addresses[ctx] = self.newInputInfo(1, AddLit = getTemp)
-            self.quadTable.append(quadrupleItem(operator, self.addresses[operator1], self.addresses[operator2], self.addresses[ctx]))
+            try:
+                self.quadTable.append(quadrupleItem(operator, self.addresses[operator1], self.addresses[operator2], self.addresses[ctx]))
+            except:
+                pass
+
         else:
             self.nodeTypes[ctx] = 'error'
             self.errorsFound.append("linea (" + str(ctx.start.line) + "): ambos operadores deben ser int")
@@ -545,7 +695,10 @@ class STFiller(DecafListener):
             #------codigo intermedio------
             getTemp = self.getTemp()
             self.addresses[ctx] = self.newInputInfo(1, AddLit = getTemp)
-            self.quadTable.append(quadrupleItem(operator, self.addresses[operator1], self.addresses[operator2], self.addresses[ctx]))
+            try:
+                self.quadTable.append(quadrupleItem(operator, self.addresses[operator1], self.addresses[operator2], self.addresses[ctx]))
+            except:
+                pass
 
         else:    
             self.nodeTypes[ctx] = 'error'
@@ -564,8 +717,11 @@ class STFiller(DecafListener):
                 self.nodeTypes[ctx] = 'boolean'
 
                 #------Codigo intermedio------
-                self.quadTable.append(quadrupleItem(symbol, self.addresses[operator1], self.addresses[operator2], self.addresses[ctx]))
-                self.quadTable.append(quadrupleItem("GOTOF", self.addresses[ctx], None, None))
+                try:
+                    self.quadTable.append(quadrupleItem(symbol, self.addresses[operator1], self.addresses[operator2], self.addresses[ctx]))
+                    self.quadTable.append(quadrupleItem("goToFalse", self.addresses[ctx], None, None))
+                except:
+                    pass
                                 
             else:
                 self.nodeTypes[ctx] = 'error'
@@ -578,8 +734,11 @@ class STFiller(DecafListener):
                     self.nodeTypes[ctx] = 'boolean'
 
                     #------Codigo intermedio------
-                    self.quadTable.append(quadrupleItem(symbol, self.addresses[operator1], self.addresses[operator2], self.addresses[ctx]))
-                    self.quadTable.append(quadrupleItem("GOTOF", self.addresses[ctx], None, None))
+                    try:
+                        self.quadTable.append(quadrupleItem(symbol, self.addresses[operator1], self.addresses[operator2], self.addresses[ctx]))
+                        self.quadTable.append(quadrupleItem("goToFalse", self.addresses[ctx], None, None))
+                    except:
+                        pass
 
                 else:
                     self.nodeTypes[ctx] = 'error'
@@ -638,18 +797,35 @@ class STFiller(DecafListener):
     def addVarST(self, varType, varId, varContext, value, isArray):
         if (value == None): 
             value = 1
-        try:
-            size = int(self.sizeDict.get(varType)*value)
-        except:
-            size = 0
+        if varType in self.validVarTypes:
+            try:
+                size = int(int(self.sizeDict.get(varType))*int(value))
+            except:
+                size = 0
+        elif varType in self.structDictionary:
+            try:
+                size = self.structDictionary.get(varType).size*int(value)
+            except:
+                size = 0
         
         #primero conseguimos el symboltable del scope en el que estamos
         temp = self.scopeDictionary.get(self.currentScope).varItems
         if (self.currentScope == 'program'):
-            code = 'G'
+            code = 'program'
         else:
-            code = self.currentScope.capitalize()
-        labelVar = code+'['+str(self.offset - self.scopeDictionary.get(self.currentScope).offset)+']'
+            code = self.currentScope.upper()
+            while ("INSIDE" in code):
+                index = code.find("INSIDE")
+                code = code[index+6:]
+        try:
+            labelVar = code
+        except:
+            labelVar = code
+
+        try:
+            currentoffset = self.offset - self.scopeDictionary.get(labelVar.capitalize()).offset
+        except:
+            currentoffset = self.offset - self.scopeDictionary.get(self.currentScope).offset
 
         if varId not in temp:
             #Si no encuentra la variable dentro del symbolTable
@@ -661,7 +837,7 @@ class STFiller(DecafListener):
             label = labelVar,
             varContext= varContext, 
             size= size, 
-            offset= self.offset - self.scopeDictionary.get(self.currentScope).offset)
+            offset= currentoffset)
             self.offset += size
             self.scopeDictionary.get(self.currentScope).varItems = temp
             return True
@@ -671,12 +847,27 @@ class STFiller(DecafListener):
     #----agregar nuevo scope al diccionario----
     def addScopeST(self, previousScope, methodType=None):
         if self.currentScope not in self.scopeDictionary:
-            self.scopeDictionary[self.currentScope] = scopeItem(
-                previousScope, 
-                {}, 
-                methodType,
-                offset = self.offset
-                )
+            if(self.currentScope == "program"):
+                self.currentCode = "Program"
+                self.scopeDictionary[self.currentScope] = scopeItem(
+                    previousScope, 
+                    {}, 
+                    methodType,
+                    offset = self.offset,
+                    code = self.currentCode
+                    )
+                
+            else:
+                if (not "Inside" in previousScope):
+                    self.currentCode = previousScope
+                self.scopeDictionary[self.currentScope] = scopeItem(
+                    previousScope, 
+                    {}, 
+                    methodType,
+                    offset = self.offset,
+                    code = self.currentCode
+                    )
+                
             return True
         else:
             return False
@@ -712,13 +903,19 @@ class STFiller(DecafListener):
             num = 1
         canAdd = False
         
-        try:
-            size = int(self.sizeDict.get(varType)*num)
-        except:
-            size = 0
+        if varType in self.validVarTypes:
+            try:
+                size = int(int(self.sizeDict.get(varType))*int(num))
+            except:
+                size = 0
+        elif varType in self.structDictionary:
+            try:
+                size = self.structDictionary.get(varType).size*int(num)
+            except:
+                size = 0
 
         structId = "struct"+structId
-        tempStructMembers = self.structDictionary.get(structId).varItems
+        tempStructMembers = self.structDictionary.get(structId).varItems 
 
         if varId not in tempStructMembers:
             tempStructMembers[varId] = varItem(varId = varId, 
@@ -728,8 +925,9 @@ class STFiller(DecafListener):
             arrayLen= num,
             varContext= varContext, 
             size= size, 
-            offset= self.offset - self.scopeDictionary.get(self.currentScope).offset)
-            self.offset += size
+            label=structId,
+            offset= self.offset - self.structDictionary.get(structId).offset)
+            self.offset += size 
             canAdd = True
         else:
             canAdd = False
@@ -749,7 +947,7 @@ class STFiller(DecafListener):
         return temp
     
     #------función para crear una nueva direccion con la informacion que se ingreso------
-    def newInputInfo(self,  inputType, addLabelTrue = None, addLabelFalse = None, AddLit = None, addNext = None, addvar = None):
+    def newInputInfo(self,  inputType, addLabelTrue = None, addLabelFalse = None, AddLit = None, addNext = None, addvar = None, addVarLabel = None, addVarOffset = None):
         
         #---Se guarda la dirección de un literal---
         if (inputType == 1):
@@ -764,5 +962,13 @@ class STFiller(DecafListener):
             return {'lblNext' : addNext}
 
         #---Se guarda direccion de una variable---
+        elif (inputType == 4):
+            address = addVarLabel+"["+ str(addVarOffset) +"]"
+            return {'address' : address}
+        
+        #---Información de cuando se llama un metodo---
+        elif (inputType == 5):
+            return{'address': addvar}
+
         else:
-            return {'address' : addvar}
+            pass

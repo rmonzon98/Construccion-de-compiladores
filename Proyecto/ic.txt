@@ -1,0 +1,69 @@
+
+label_Minimo:
+	MINIMO[4] = program[0]
+	MINIMO[8] = MINIMO[0]
+	while0.begin:
+	if MINIMO[0]<10 goto blockWhile0T
+	goto blockWhile0N
+	blockWhile0T:
+	if program[0]<MINIMO[4] goto block0T
+	goto block0N
+	block0T:
+	MINIMO[4] = program[0]
+	MINIMO[8] = MINIMO[0]
+	block0N:
+	r0=MINIMO[0]+1
+	MINIMO[0] = r0
+	if MINIMO[0]<10 goto blockWhile0T
+	goto blockWhile0N
+	blockWhile0N:
+	return MINIMO[8] 
+end label_Minimo
+label_Ordenar:
+	ORDENAR[0] = 0
+	while1.begin:
+	if ORDENAR[0]<10 goto blockWhile1T
+	goto blockWhile1N
+	blockWhile1T:
+	param ORDENAR[0]
+	ORDENAR[12] = Call Minimo
+	ORDENAR[8] = program[0]
+	program[0] = program[0]
+	program[0] = ORDENAR[8]
+	r1=ORDENAR[0]+1
+	ORDENAR[0] = r1
+	if ORDENAR[0]<10 goto blockWhile1T
+	goto blockWhile1N
+	blockWhile1N:
+end label_Ordenar
+label_OutputInt:
+end label_OutputInt
+label_InputInt:
+	return 0 
+end label_InputInt
+label_main:
+	MAIN[0] = 0
+	while2.begin:
+	if MAIN[0]<10 goto blockWhile2T
+	goto blockWhile2N
+	blockWhile2T:
+	program[0] = Call InputInt
+	r2=MAIN[0]+1
+	MAIN[0] = r2
+	if MAIN[0]<10 goto blockWhile2T
+	goto blockWhile2N
+	blockWhile2N:
+	Call Ordenar
+	MAIN[0] = 0
+	while3.begin:
+	if MAIN[0]<10 goto blockWhile3T
+	goto blockWhile3N
+	blockWhile3T:
+	param program[0]
+	Call OutputInt
+	r3=MAIN[0]+1
+	MAIN[0] = r3
+	if MAIN[0]<10 goto blockWhile3T
+	goto blockWhile3N
+	blockWhile3N:
+end label_main
