@@ -1,32 +1,37 @@
-class Program {
+class Program
+{
+struct A
+{
+	int a;
+};
 
-    void funcTest2(){
-        int j;
-        j = 2 + 3;
-    }
+struct B
+{
+	int b;
+	struct A c;
+};
 
-    int funcTest(){
-        int j;
-        int k;
-        k = 1;
-        j = 2;
-        return j;
-    }
 
-    void main() {
-        int i;
-        int j;
-        i = 2;
-        j = 1;
-        i = j +2;
-        if (i == 0)
-        {
-            i = 2;
-        }
-        else
-        {
-            i = 3;
-        }
-    }
+int factorial(int n)
+{
+	if (n==0)
+	{
+		return 1;
+	}
+	else
+	{
+		return n*factorial(n-1);
+	}
+
+}
+
+void main(void)
+{
+	struct B y;
+	y.b = 5;
+	y.c.a = 6;
+}
+
+
 }
          

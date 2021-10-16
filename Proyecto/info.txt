@@ -1,34 +1,21 @@
 Scopes
 El scope program tiene como padre a None y retorna None su offset es 0 code Program
 Sus variables son:
-	la variable con id A es tipo int (isArray: True) su context es program su offset es 0 su label es program
-El scope Minimo tiene como padre a program y retorna int su offset es 40 code program
+El scope factorial tiene como padre a program y retorna int su offset es 12 code program
 Sus variables son:
-	la variable con id i es tipo int (isArray: False) su context es param su offset es 0 su label es MINIMO
-	la variable con id Min es tipo int (isArray: False) su context es Minimo su offset es 4 su label es MINIMO
-	la variable con id index es tipo int (isArray: False) su context es Minimo su offset es 8 su label es MINIMO
-El scope Scope1InsideMinimo tiene como padre a Minimo y retorna None su offset es 52 code Minimo
+	la variable con id n es tipo int (isArray: False) su context es param su offset es 0 su label es FACTORIAL
+El scope Scope1Insidefactorial tiene como padre a factorial y retorna None su offset es 16 code factorial
 Sus variables son:
-El scope Scope2InsideMinimo tiene como padre a Scope1InsideMinimo y retorna None su offset es 52 code Minimo
+El scope Scope2Insidefactorial tiene como padre a factorial y retorna None su offset es 16 code factorial
 Sus variables son:
-El scope Ordenar tiene como padre a program y retorna void su offset es 52 code program
+El scope main tiene como padre a program y retorna void su offset es 16 code program
 Sus variables son:
-	la variable con id i es tipo int (isArray: False) su context es Ordenar su offset es 0 su label es ORDENAR
-	la variable con id j es tipo int (isArray: False) su context es Ordenar su offset es 4 su label es ORDENAR
-	la variable con id temp es tipo int (isArray: False) su context es Ordenar su offset es 8 su label es ORDENAR
-El scope Scope1InsideOrdenar tiene como padre a Ordenar y retorna None su offset es 64 code Ordenar
-Sus variables son:
-	la variable con id Index es tipo int (isArray: False) su context es Scope1InsideOrdenar su offset es 12 su label es ORDENAR
-El scope OutputInt tiene como padre a program y retorna void su offset es 68 code program
-Sus variables son:
-	la variable con id n es tipo int (isArray: False) su context es param su offset es 0 su label es OUTPUTINT
-El scope InputInt tiene como padre a program y retorna int su offset es 72 code program
-Sus variables son:
-El scope main tiene como padre a program y retorna void su offset es 72 code program
-Sus variables son:
-	la variable con id i es tipo int (isArray: False) su context es main su offset es 0 su label es MAIN
-El scope Scope1Insidemain tiene como padre a main y retorna None su offset es 76 code main
-Sus variables son:
-El scope Scope2Insidemain tiene como padre a main y retorna None su offset es 76 code main
-Sus variables son:
+	la variable con id y es tipo structB (isArray: False) su context es main su offset es 0 su label es MAIN
 Structs
+El struct con ID structA offset 0 size 4
+Tiene los siguientes atributos: 
+	Atributo con nombre a es tipo int (isArray: False) su context es program su offset es 0 su label es structA
+El struct con ID structB offset 4 size 8
+Tiene los siguientes atributos: 
+	Atributo con nombre b es tipo int (isArray: False) su context es program su offset es 0 su label es structB
+	Atributo con nombre c es tipo structA (isArray: False) su context es program su offset es 4 su label es structB

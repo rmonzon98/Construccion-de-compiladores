@@ -1,67 +1,36 @@
 class Program
 {
-
-int A[10];
-
-int Minimo(int i)
+struct A
 {
-	int Min;
-	int index;
-	Min = A[i];
-	index = i;
-	while(i<10)
+	int a;
+};
+
+struct B
+{
+	int b;
+	struct A c;
+};
+
+
+int factorial(int n)
+{
+	if (n==0)
 	{
-		if (A[i]<Min)
-		{
-			Min = A[i];
-			index = i;
-		}
-		i = i + 1;
+		return 1;
 	}
-	return index;
-}
-
-void Ordenar(void)
-{
-	int i;
-	int j;
-	int temp;
-	i = 0;
-	while(i<10)
+	else
 	{
-		int Index;
-		Index = Minimo(i);
-		temp = A[Index];
-		A[Index] = A[i];
-		A[i]=temp;
-		i = i+1;
+		return n*factorial(n-1);
 	}
-}
 
-void OutputInt(int n)
-{
 }
-
-int InputInt(void)
-{return 0;}
 
 void main(void)
 {
-
-	int i;
-	i = 0;
-	while(i<10)
-	{
-		A[i]=InputInt();
-		i = i+1;		
-	}
-	Ordenar();
-	i = 0;
-	while(i<10)
-	{
-		OutputInt(A[i]);
-		i = i+1;
-	}
-
+	struct B y;
+	y.b = 5;
+	y.c.a = factorial(y.b);
 }
+
+
 }
