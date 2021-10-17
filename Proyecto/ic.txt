@@ -13,7 +13,6 @@ label_Ackerman:
 	r1=ACKERMAN[0]+1
 	param r1
 	param 0
-	Call Ackerman
 	return Call Ackerman 
 	goto block2N
 	block2F:
@@ -21,10 +20,8 @@ label_Ackerman:
 	r3=ACKERMAN[4]-1
 	param ACKERMAN[0]
 	param r3
-	Call Ackerman
 	param r2
 	param Call Ackerman
-	Call Ackerman
 	return Call Ackerman 
 	block2N:
 	block1N:
@@ -40,7 +37,6 @@ label_main:
 	if MAIN[0]<10 goto blockWhile0T
 	goto blockWhile0N
 	blockWhile0T:
-	Call InputInt
 	program[MAIN[0]] = Call InputInt
 	r4=MAIN[0]+1
 	MAIN[0] = r4
@@ -53,7 +49,6 @@ label_main:
 	blockWhile1T:
 	param program[MAIN[0]]
 	param MAIN[4]
-	Call Ackerman
 	param Call Ackerman
 	Call OutputInt
 	if MAIN[0]<10 goto blockWhile1T

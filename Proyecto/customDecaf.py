@@ -645,7 +645,7 @@ class STFiller(DecafListener):
                 #---se llama a la función---
                 parent = ctx.parentCtx
                 grandParent = parent.parentCtx
-                if(type(grandParent)  != DecafParser.St_returnContext):
+                if(type(grandParent)  == DecafParser.BlockContext):
                     labelMeth = "Call "+methName
                     methAdd = self.newInputInfo(5,addvar=labelMeth)
                     self.quadTable.append(quadrupleItem("", methAdd, None, None))
