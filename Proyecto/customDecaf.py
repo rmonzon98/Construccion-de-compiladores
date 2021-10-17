@@ -84,7 +84,7 @@ class STFiller(DecafListener):
             #Impresion de return y su valor que retorna
             elif (quad.operator == "return"):
                 argument1 = quad.argument1.get('address')
-                if (type(argument1) == dict):
+                while (type(argument1) == dict):
                     argument1 = argument1.get('address')
                 if (quad.argument1 != None):
                     ic += "\n\treturn " + argument1 +" "
@@ -125,7 +125,10 @@ class STFiller(DecafListener):
 
             #Cuando se desea imprimir una variable de algún scope
             elif (quad.result == None):
-                ic += "\n\t" + quad.operator + " " + str(quad.argument1.get('address'))
+                argument1 = quad.argument1.get('address')
+                while type(argument1) == dict:
+                    argument1 = argument1.get('address')
+                ic += "\n\t" + quad.operator + " " + str(argument1)
 
             #Asignaciones (con operaciones dentro)
             elif (quad.argument2 != None):
@@ -293,31 +296,28 @@ class STFiller(DecafListener):
                 if (currentStruct != None):
                     varBeingEvaluated = currentStruct.varItems[ctx.getChild(0).getText()]
                     if (varBeingEvaluated != None):
-                        self.nodeTypes[ctx] = self.nodeTypes[ctx.location()]
-                        '''
-                        firstTemp = self.getTemp()
-                        firstArg = self.newInputInfo(1, AddLit= 0) 
-                        secondVar = 
-
-                        tempAdd = self.newInputInfo(1, AddLit= tempRest) 
-                        secondArg = self.newInputInfo(1, AddLit= varBeingEvaluated.offset)
-                        self.addresses[ctx] = tempAdd
-                        self.quadTable.append(quadrupleItem("+", firstArg, secondArg, tempAdd))   
-
-                        
-                        '''
-                        temp1 = self.getTemp()
-                        tempAdd = self.newInputInfo(1, AddLit=temp1)
-                        firstArgAdd = self.newInputInfo(1, AddLit=currentStruct.size)
-                        secondArgAdd = self.newInputInfo(1, AddLit=0)
-                        self.quadTable.append(quadrupleItem("+", firstArgAdd, secondArgAdd, tempAdd))
-                        temp2 = self.getTemp()
-                        temp2Add = self.newInputInfo(1, AddLit=temp2)
-                        self.quadTable.append(quadrupleItem("+", secondArgAdd, tempAdd, temp2Add))
-                        self.addresses[ctx] = self.newInputInfo(1, AddLit=temp2Add)
-                        print(ctx.getText())
-                        print("caso 1 "+str(self.addresses[ctx]))
-                        print()
+                        if (ctx.expression):
+                            expAdd = self.addresses[ctx.expression]
+                            try:
+                                offsetVar = self.addresses[ctx.expression].get("address")
+                            except:
+                                offsetVar = self.addresses[ctx.expression]
+                            firstArg = varBeingEvaluated.label 
+                            self.addresses[ctx] = self.newInputInfo(4,addVarLabel=firstArg, addVarOffset=offsetVar)
+                        if (ctx.location()):
+                            self.nodeTypes[ctx] = self.nodeTypes[ctx.location()]
+                            temp1 = self.getTemp()
+                            tempAdd = self.newInputInfo(1, AddLit=temp1)
+                            firstArgAdd = self.newInputInfo(1, AddLit=currentStruct.size)
+                            secondArgAdd = self.newInputInfo(1, AddLit=0)
+                            self.quadTable.append(quadrupleItem("+", firstArgAdd, secondArgAdd, tempAdd))
+                            temp2 = self.getTemp()
+                            temp2Add = self.newInputInfo(1, AddLit=temp2)
+                            self.quadTable.append(quadrupleItem("+", secondArgAdd, tempAdd, temp2Add))
+                            self.addresses[ctx] = self.newInputInfo(1, AddLit=temp2Add)
+                            print(ctx.getText())
+                            print("caso 1 "+str(self.addresses[ctx]))
+                            print()
                     else:
                         self.nodeTypes[ctx] = 'error'
                         self.errorsFound.append("No existe tal propiedad dentro del struct")
@@ -328,11 +328,24 @@ class STFiller(DecafListener):
                 varBeingEvaluated = self.searchVar(ctx.getChild(0).getText(), self.currentScope)
 
                 if (varBeingEvaluated != None):
-                    self.nodeTypes[ctx] = self.nodeTypes[ctx.location()]
-                    childAdd = self.addresses[ctx.getChild(2)].get('address')
-                    while type(childAdd) == dict:
-                        childAdd = childAdd.get('address')
-                    self.addresses[ctx] = self.newInputInfo(4, addVarLabel= varBeingEvaluated.label, addVarOffset= childAdd)
+                    if (ctx.expression):
+                        try:
+                            expAdd = self.addresses[ctx.getChild(2)]
+                            try:
+                                offsetVar = self.addresses[ctx.expression].get("address")
+                                
+                            except:
+                                offsetVar = self.addresses[ctx.getChild(2)]
+                            firstArg = varBeingEvaluated.label 
+                            self.addresses[ctx] = self.newInputInfo(4,addVarLabel=firstArg, addVarOffset=offsetVar)
+                        except:
+                            self.addresses[ctx] = self.newInputInfo(4, addVarLabel= varBeingEvaluated.label, addVarOffset= varBeingEvaluated.offset)
+                    else:
+                        self.nodeTypes[ctx] = self.nodeTypes[ctx.location()]
+                        childAdd = self.addresses[ctx.getChild(2)].get('address')
+                        while type(childAdd) == dict:
+                            childAdd = childAdd.get('address')
+                        self.addresses[ctx] = self.newInputInfo(4, addVarLabel= varBeingEvaluated.label, addVarOffset= childAdd)
                     print(ctx.getText())
                     print("caso 2 "+str(self.addresses[ctx]))
                     print()
@@ -346,18 +359,31 @@ class STFiller(DecafListener):
                 currentStruct = self.structStack.pop()
                 if (currentStruct != None):
                     varBeingEvaluated = currentStruct.varItems[ctx.getChild(0).getText()]
-                    if (varBeingEvaluated != None):                      
-                        self.nodeTypes[ctx] = varBeingEvaluated.varType 
-                        tempRest = self.getTemp()
-                        firstArg = self.newInputInfo(1, AddLit= 0) 
-                        tempAdd = self.newInputInfo(1, AddLit= tempRest) 
-                        secondArg = self.newInputInfo(1, AddLit= varBeingEvaluated.offset)
-                        self.addresses[ctx] = tempAdd
-                        grandGrandParent = ctx.parentCtx.parentCtx
-                        if (type(grandGrandParent) == DecafParser.St_assigContext) or (type(grandGrandParent) == DecafParser.Ex_locContext) :
-                            self.quadTable.append(quadrupleItem("+", firstArg, secondArg, tempAdd))
-                        else:
-                            pass                            
+                    if (varBeingEvaluated != None):
+                        if (ctx.expression):
+                            try:
+                                expAdd = self.addresses[ctx.getChild(2)]
+                                try:
+                                    offsetVar = self.addresses[ctx.expression].get("address")
+                                    
+                                except:
+                                    offsetVar = self.addresses[ctx.getChild(2)]
+                                firstArg = varBeingEvaluated.label 
+                                self.addresses[ctx] = self.newInputInfo(4,addVarLabel=firstArg, addVarOffset=offsetVar)
+                            except:
+                                self.addresses[ctx] = self.newInputInfo(4, addVarLabel= varBeingEvaluated.label, addVarOffset= varBeingEvaluated.offset)
+                        else:                      
+                            self.nodeTypes[ctx] = varBeingEvaluated.varType 
+                            tempRest = self.getTemp()
+                            firstArg = self.newInputInfo(1, AddLit= 0) 
+                            tempAdd = self.newInputInfo(1, AddLit= tempRest) 
+                            secondArg = self.newInputInfo(1, AddLit= varBeingEvaluated.offset)
+                            self.addresses[ctx] = tempAdd
+                            grandGrandParent = ctx.parentCtx.parentCtx
+                            if (type(grandGrandParent) == DecafParser.St_assigContext) or (type(grandGrandParent) == DecafParser.Ex_locContext) :
+                                self.quadTable.append(quadrupleItem("+", firstArg, secondArg, tempAdd))
+                            else:
+                                pass                            
                         print(ctx.getText())
                         #print(type(grandGrandParent))
                         #print(type(grandGrandParent) == DecafParser.St_assigContext)
@@ -371,7 +397,20 @@ class STFiller(DecafListener):
             varBeingEvaluated = self.searchVar(ctx.getChild(0).getText(), self.currentScope)
             if (varBeingEvaluated != None):
                 self.nodeTypes[ctx] = varBeingEvaluated.varType
-                self.addresses[ctx] = self.newInputInfo(4, addVarLabel= varBeingEvaluated.label, addVarOffset= varBeingEvaluated.offset)
+                if (ctx.expression):
+                    try:
+                        expAdd = self.addresses[ctx.getChild(2)]
+                        try:
+                            offsetVar = self.addresses[ctx.expression].get("address")
+                            
+                        except:
+                            offsetVar = self.addresses[ctx.getChild(2)]
+                        firstArg = varBeingEvaluated.label 
+                        self.addresses[ctx] = self.newInputInfo(4,addVarLabel=firstArg, addVarOffset=offsetVar)
+                    except:
+                        self.addresses[ctx] = self.newInputInfo(4, addVarLabel= varBeingEvaluated.label, addVarOffset= varBeingEvaluated.offset)
+                else:
+                    self.addresses[ctx] = self.newInputInfo(4, addVarLabel= varBeingEvaluated.label, addVarOffset= varBeingEvaluated.offset)
                 #YA FUNCIONA CON VARIABLES QUE MULTIPLICA EN RETURN PERO AÚN SE PUEDE MEJORAR EL MANEJO DE ARRAYS
                 print(ctx.getText())
                 print("caso 4 "+str(self.addresses[ctx]))
@@ -382,10 +421,19 @@ class STFiller(DecafListener):
                 self.errorsFound.append("linea (" + str(ctx.start.line) + "): la variable no se ha sido definida en este contexto previamente")
 
         #------Validación de la parte del expression------
-        if (ctx.expression()): 
-            print(ctx.getText())
-            print("caso 5 "+str(self.addresses[ctx]))
-            print()
+        if (ctx.expression()):
+            if (ctx.expression):
+                expAdd = self.addresses[ctx.getChild(2)]
+                try:
+                    offsetVar = self.addresses[ctx.expression].get("address")
+                except:
+                    offsetVar = self.addresses[ctx.getChild(2)]
+                firstArg = varBeingEvaluated.label 
+                self.addresses[ctx] = self.newInputInfo(4,addVarLabel=firstArg, addVarOffset=offsetVar)
+            else:
+                print(ctx.getText())
+                print("caso 5 "+str(self.addresses[ctx]))
+                print()
             if(self.nodeTypes[ctx.expression()] != 'int'):
                 self.nodeTypes[ctx] = 'error'
                 self.errorsFound.append("linea (" + str(ctx.start.line) + "): se necesita un indice entero")
@@ -597,7 +645,7 @@ class STFiller(DecafListener):
                 #---se llama a la función---
                 parent = ctx.parentCtx
                 grandParent = parent.parentCtx
-                if(str(grandParent.getChild(0)) == "{"):
+                if(type(grandParent)  != DecafParser.St_returnContext):
                     labelMeth = "Call "+methName
                     methAdd = self.newInputInfo(5,addvar=labelMeth)
                     self.quadTable.append(quadrupleItem("", methAdd, None, None))
@@ -636,7 +684,10 @@ class STFiller(DecafListener):
     #------mtdc------
     def exitEx_mtdc(self, ctx: DecafParser.Ex_mtdcContext):
         self.nodeTypes[ctx] = self.nodeTypes[ctx.getChild(0)]
-        self.addresses[ctx] = self.addresses[ctx.getChild(0)]
+        try:
+            self.addresses[ctx] = self.addresses[ctx.getChild(0)]
+        except:
+            pass
 
     #------loc------    
     def exitEx_loc(self, ctx: DecafParser.Ex_locContext):
@@ -1008,6 +1059,8 @@ class STFiller(DecafListener):
 
         #---Se guarda direccion de una variable---
         elif (inputType == 4):
+            while (type(addVarOffset) == dict):
+                addVarOffset = addVarOffset.get("address")
             address = addVarLabel+"["+ str(addVarOffset) +"]"
             return {'address' : address}
         

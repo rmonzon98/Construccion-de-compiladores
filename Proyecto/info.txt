@@ -1,24 +1,30 @@
 Scopes
 El scope program tiene como padre a None y retorna None su offset es 0 code Program
 Sus variables son:
-El scope factorial tiene como padre a program y retorna int su offset es 12 code program
+	la variable con id A es tipo int (isArray: True) su context es program su offset es 0 su label es program
+El scope Ackerman tiene como padre a program y retorna int su offset es 40 code program
 Sus variables son:
-	la variable con id n es tipo int (isArray: False) su context es param su offset es 0 su label es FACTORIAL
-El scope Scope1Insidefactorial tiene como padre a factorial y retorna None su offset es 16 code factorial
+	la variable con id m es tipo int (isArray: False) su context es param su offset es 0 su label es ACKERMAN
+	la variable con id n es tipo int (isArray: False) su context es param su offset es 4 su label es ACKERMAN
+El scope Scope1InsideAckerman tiene como padre a Ackerman y retorna None su offset es 48 code Ackerman
 Sus variables son:
-El scope Scope2Insidefactorial tiene como padre a Scope1Insidefactorial y retorna None su offset es 16 code factorial
+El scope Scope2InsideAckerman tiene como padre a Ackerman y retorna None su offset es 48 code Ackerman
 Sus variables son:
-	la variable con id k es tipo int (isArray: False) su context es Scope2Insidefactorial su offset es 0 su label es FACTORIAL
-El scope Scope3Insidefactorial tiene como padre a factorial y retorna None su offset es 20 code factorial
+El scope Scope3InsideAckerman tiene como padre a Scope2InsideAckerman y retorna None su offset es 48 code Ackerman
 Sus variables son:
-El scope main tiene como padre a program y retorna void su offset es 20 code program
+El scope Scope4InsideAckerman tiene como padre a Scope2InsideAckerman y retorna None su offset es 48 code Ackerman
 Sus variables son:
-	la variable con id y es tipo structB (isArray: False) su context es main su offset es 0 su label es MAIN
+El scope OutputInt tiene como padre a program y retorna void su offset es 48 code program
+Sus variables son:
+	la variable con id n es tipo int (isArray: False) su context es param su offset es 0 su label es OUTPUTINT
+El scope InputInt tiene como padre a program y retorna int su offset es 52 code program
+Sus variables son:
+El scope main tiene como padre a program y retorna void su offset es 52 code program
+Sus variables son:
+	la variable con id i es tipo int (isArray: False) su context es main su offset es 0 su label es MAIN
+	la variable con id j es tipo int (isArray: False) su context es main su offset es 4 su label es MAIN
+El scope Scope1Insidemain tiene como padre a main y retorna None su offset es 60 code main
+Sus variables son:
+El scope Scope2Insidemain tiene como padre a main y retorna None su offset es 60 code main
+Sus variables son:
 Structs
-El struct con ID structA offset 0 size 4
-Tiene los siguientes atributos: 
-	Atributo con nombre a es tipo int (isArray: False) su context es program su offset es 0 su label es structA
-El struct con ID structB offset 4 size 8
-Tiene los siguientes atributos: 
-	Atributo con nombre b es tipo int (isArray: False) su context es program su offset es 0 su label es structB
-	Atributo con nombre c es tipo structA (isArray: False) su context es program su offset es 4 su label es structB
