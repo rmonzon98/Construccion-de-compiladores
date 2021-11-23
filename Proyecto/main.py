@@ -5,6 +5,7 @@ from antlr4.error.Errors import *
 from antlr.DecafLexer import DecafLexer
 from antlr.DecafParser import DecafParser
 from customDecaf import *
+from objectiveCodeTranslator import *
 
 def executeWalker(file):
     input_stream = FileStream(file)
@@ -57,6 +58,8 @@ def executeWalker(file):
     with open("ic.txt", "w") as text_file:
         text_file.write("%s" % treeInfo.intCode)
         text_file.close()
+
+    codeTranslator()
     
 
     return treeInfo.errorsFound, treeInfo.intCode

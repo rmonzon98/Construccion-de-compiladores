@@ -1,56 +1,65 @@
 
-label_Ackerman:
-	if ACKERMAN[0]==0 goto block1T
-	goto block1F
-	block1T:
-	r0=ACKERMAN[4]+1
-	return r0 
-	goto block1N
-	block1F:
-	if ACKERMAN[4]==1 goto block2T
-	goto block2F
-	block2T:
-	r1=ACKERMAN[0]+1
-	param r1
-	param 0
-	return Call Ackerman 
-	goto block2N
-	block2F:
-	r2=ACKERMAN[0]-1
-	r3=ACKERMAN[4]-1
-	param ACKERMAN[0]
-	param r3
-	param r2
-	param Call Ackerman
-	return Call Ackerman 
-	block2N:
-	block1N:
-end label_Ackerman
 label_OutputInt:
 end label_OutputInt
 label_InputInt:
 	return 0 
 end label_InputInt
+label_Ackerman:
+	if ACKERMAN[0]==0 goto block1T
+	goto block1F
+	block1T:
+	r0 = ACKERMAN[4] + 1
+	return r0 
+	goto block1N
+	block1F:
+	if ACKERMAN[4]==0 goto block2T
+	goto block2F
+	block2T:
+	r1 = ACKERMAN[0] - 1
+	param r1
+	param 1
+	r2 = Call Ackerman
+	return r2 
+	goto block2N
+	block2F:
+	r3 = ACKERMAN[0] - 1
+	r4 = ACKERMAN[4] - 1
+	param ACKERMAN[0]
+	param r4
+	r5 = Call Ackerman
+	param r3
+	param r5
+	r6 = Call Ackerman
+	return r6 
+	block2N:
+	block1N:
+end label_Ackerman
 label_main:
 	MAIN[0] = 0
+	MAIN[4] = 0
 	while0:
 	if MAIN[0]<10 goto blockWhile0T
 	goto blockWhile0N
 	blockWhile0T:
-	program[MAIN[0]] = Call InputInt
-	r4=MAIN[0]+1
-	MAIN[0] = r4
+	r7 = Call InputInt
+	program[MAIN[0]] = r7
+	r8 = MAIN[0] + 1
+	MAIN[0] = r8
 	if MAIN[0]<10 goto blockWhile0T
 	goto blockWhile0N
 	blockWhile0N:
+	MAIN[0] = 0
 	while1:
 	if MAIN[0]<10 goto blockWhile1T
 	goto blockWhile1N
 	blockWhile1T:
 	param program[MAIN[0]]
 	param MAIN[4]
-	param Call Ackerman
+	r9 = Call Ackerman
+	param r9
 	Call OutputInt
+	r10 = MAIN[0] + 1
+	MAIN[0] = r10
 	if MAIN[0]<10 goto blockWhile1T
 	goto blockWhile1N
 	blockWhile1N:
