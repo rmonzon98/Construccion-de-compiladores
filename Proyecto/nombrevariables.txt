@@ -1,0 +1,6 @@
+PROGRAM -> A -> 0 -> 1 -> 40
+OUTPUTINT -> n -> 0 -> 1 -> 4
+ACKERMAN -> m -> 0 -> 1 -> 4
+ACKERMAN -> n -> 4 -> 2 -> 4
+MAIN -> i -> 0 -> 1 -> 4
+MAIN -> j -> 4 -> 2 -> 4

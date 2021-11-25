@@ -1,0 +1,28 @@
+class Program{
+    void OutputInt(int a){
+
+    }
+
+    int InputInt(){
+        return 0;
+    }
+
+    int fibonacci(int n){
+        if(n==0){
+            return 1;
+        }
+        if (n==1){
+            return 1;
+        }
+        return fibonacci(n-1) + fibonacci(n-2);
+	}
+
+    void main(){
+        int i;
+        i = 0;
+        while(i < 10) {
+        	OutputInt(fibonacci(i));
+		i = i + 1;
+	    }
+    }
+}

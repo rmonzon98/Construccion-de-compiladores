@@ -1,0 +1,11 @@
+class Program{
+
+    void main(void){
+        int i;
+        int j;
+        int k;
+        i = 2;
+        j = 1;
+        k = i + j;
+    }
+}

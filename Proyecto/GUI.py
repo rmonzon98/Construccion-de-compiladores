@@ -33,7 +33,7 @@ def guardar():
     
 
 def ejecutar():
-    print("se ejecuta?")
+    #print("se ejecuta?")
     label_ci.delete(1.0, tk.END)
     filepath = 'executiontemp.decaf'
     with open(filepath, "w") as output_file:
@@ -46,7 +46,7 @@ def ejecutar():
         errorsMsg = errorsMsg + errors[i]+'\n'
     if (lines == 0): 
         errorsMsg = "No hay errores"
-    label_ci.insert(tk.END, "\t\t\tErrores:\n"+errorsMsg+"\n\n\t\t\tCodigo intermedio:"+ic)
+    label_ci.insert(tk.END, "\t\t\tErrores:\n"+errorsMsg+"\n\n\t\t\tARM:\n"+ic)
 
 #--------------------------GUI--------------------------
 userI = tk.Tk()
