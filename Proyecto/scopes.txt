@@ -1,29 +1,8 @@
 Fucniones
 El scope program retorna None su offset es 0 code Program
 Sus variables son:
-	la variable con id A es tipo int (isArray: True) su context es program su offset es 0 su label es program
-El scope OutputInt retorna void su offset es 40 code program
-Sus variables son:
-	la variable con id n es tipo int (isArray: False) su context es param su offset es 0 su label es OUTPUTINT
-El scope InputInt retorna int su offset es 44 code program
-Sus variables son:
-El scope Ackerman retorna int su offset es 44 code program
-Sus variables son:
-	la variable con id m es tipo int (isArray: False) su context es param su offset es 0 su label es ACKERMAN
-	la variable con id n es tipo int (isArray: False) su context es param su offset es 4 su label es ACKERMAN
-El scope Scope1InsideAckerman retorna None su offset es 52 code Ackerman
-Sus variables son:
-El scope Scope2InsideAckerman retorna None su offset es 52 code Ackerman
-Sus variables son:
-El scope Scope3InsideAckerman retorna None su offset es 52 code Ackerman
-Sus variables son:
-El scope Scope4InsideAckerman retorna None su offset es 52 code Ackerman
-Sus variables son:
-El scope main retorna void su offset es 52 code program
+El scope main retorna void su offset es 0 code program
 Sus variables son:
 	la variable con id i es tipo int (isArray: False) su context es main su offset es 0 su label es MAIN
 	la variable con id j es tipo int (isArray: False) su context es main su offset es 4 su label es MAIN
-El scope Scope1Insidemain retorna None su offset es 60 code main
-Sus variables son:
-El scope Scope2Insidemain retorna None su offset es 60 code main
-Sus variables son:
+	la variable con id k es tipo int (isArray: False) su context es main su offset es 8 su label es MAIN
